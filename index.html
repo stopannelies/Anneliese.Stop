@@ -26,6 +26,7 @@
         .search-panel { background-color: #FFFFFF; border: 2px solid #2EA9DF; border-radius: 8px; overflow: hidden; margin-top: 10px; transition: all 0.3s ease; }
         .search-header { background-color: #E6F4F1; color: #2D3436; font-weight: bold; }
         
+        /* 表格樣式 */
         .result-table { table-layout: fixed; width: 100%; }
         .result-table th { 
             background-color: #E2E8F0; color: #2D3436; font-size: 0.8rem; 
@@ -43,14 +44,15 @@
         .header-small { display: block; font-size: 0.65rem; color: #666; transform: scale(0.95); font-weight: normal; }
         .card-shadow { box-shadow: 0 2px 5px rgba(0,0,0,0.08); border-radius: 6px; border: 1px solid #E5E5E5; }
         .font-compact { letter-spacing: -0.02em; }
-        
-        /* 網頁查詢視窗 */
+
+        /* 網頁查詢視窗樣式 */
         .browser-frame-container { border: 2px solid #A0D8EF; border-radius: 6px; overflow: hidden; background: white; height: 350px; display: flex; flex-direction: column; }
         .browser-toolbar { background: #E1F5FE; padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #B3E5FC; height: 32px; }
         .browser-title { font-weight: bold; color: #0277BD; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; }
         .browser-actions { display: flex; gap: 4px; }
         .browser-btn { color: #0288D1; cursor: pointer; transition: all 0.2s; padding: 2px; font-size: 0.8rem; }
         .browser-btn:hover { color: #01579B; background-color: rgba(255,255,255,0.5); border-radius: 4px; }
+        
         .browser-content-wrapper { flex: 1; width: 100%; height: 100%; overflow: hidden; position: relative; }
         .browser-iframe { width: 118%; height: 118%; transform: scale(0.85); transform-origin: 0 0; border: none; background: white; position: absolute; top: 0; left: 0; }
 
@@ -68,26 +70,6 @@
         const copyrightHeaders = [
             {render:()=><span>次數<span className="header-small">(無除夕)</span></span>, width:"50px"},
             {render:()=><span>唱過<span className="header-small">(無45轉)</span></span>, width:"70px"},
-            {render:"歌名", width:"150px"},
-            {render:"重製", width:"55px"}, 
-            {render:"MPA", width:"55px"},  
-            {render:"首句歌詞", width:"160px"},
-            {render:"原唱人", width:"70px"}, 
-            {render:"連結", width:"60px"},   
-            {render:"特殊備註", width:"120px"},
-            {render:"作詞人", width:"70px"}, 
-            {render:()=><span>詞<br/>公權</span>, width:"55px"}, 
-            {render:"詞重權", width:"70px"}, 
-            {render:()=><span>詞<br/>百分比</span>, width:"55px"}, 
-            {render:"作曲人", width:"70px"}, 
-            {render:"曲公權", width:"55px"}, 
-            {render:"曲重權", width:"70px"}, 
-            {render:()=><span>曲<br/>百分比</span>, width:"55px"}, 
-            {render:"編曲", width:"70px"} 
-        ];
-        
-        // 原唱查詢標題 (同版權查詢，扣除前兩欄)
-        const origSingerHeaders = [
             {render:"歌名", width:"150px"},
             {render:"重製", width:"55px"}, 
             {render:"MPA", width:"55px"},  
@@ -193,7 +175,12 @@
         const links = {
             download: { authPublic: "https://docs.google.com/document/d/1clnHPqpcsxw1eZromz-LdavIyeA5jUKDGxia8Tg2Bk4/export?format=docx", authRemake: "https://docs.google.com/document/d/17Pq1NKTkKWNBZh0FEFkHOAh-TJO6Ypc2HECIy0RcpnE/export?format=docx" },
             program: { schedule: "https://docs.google.com/spreadsheets/d/1WULc6ENn4a6_VolJX_1rMjKnRbNzf3SwPRr7geLXnCQ/edit?gid=580247079#gid=580247079", icebing: "https://docs.google.com/spreadsheets/u/0/d/1lQcpINzgcsEWdl-PZpUTxpiFA90KE6DnN_70xFwl8fk/edit" },
-            copyright: { member: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=1616151799#gid=1616151799", mpa: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1591903723#gid=1591903723", querySource: "https://docs.google.com/spreadsheets/d/1KxHAmz57FOu8ti8l_Zd96lrwCfO5wexPRV0jsvNaVGA/edit?gid=0#gid=0", must: "https://www.must.org.tw/tw/chinese_musical/02.aspx" },
+            copyright: { 
+                member: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=1616151799#gid=1616151799", 
+                mpa: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1591903723#gid=1591903723", 
+                querySource: "https://docs.google.com/spreadsheets/d/1KxHAmz57FOu8ti8l_Zd96lrwCfO5wexPRV0jsvNaVGA/edit?gid=0#gid=0",
+                must: "https://www.must.org.tw/tw/chinese_musical/02.aspx"
+            },
             others: { singerListSource: "https://docs.google.com/spreadsheets/d/1mt4dVA3_VmqzyKjf0jbmYQMzJl0sef4G2hcqve7KDQ0/edit?gid=530920512#gid=530920512", epQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=622192856#gid=622192856", recordedQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1872621493#gid=1872621493", singerSungQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=399230212#gid=399230212", haojiQuerySource: "https://docs.google.com/spreadsheets/d/1BiIWEn1Yh22nOZM_z-HFyNryX_AsjmjnH366VUDRuPg/edit?gid=829761523#gid=829761523", haojiQuery: "#" }
         };
 
@@ -202,60 +189,84 @@
             <div className="mb-4 border-b border-gray-200 pb-4 last:border-0 last:pb-0">
                 <div className="font-bold text-gray-500 text-sm mb-2">{label}</div>
                 <form onSubmit={(e)=>{e.preventDefault();hook.search(hook.term)}} className="flex gap-2 mb-1">
-                    <input type="text" value={hook.term} onChange={(e)=>hook.setTerm(e.target.value)} placeholder="請輸入歌名並按下搜尋" className="flex-1 border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-400 transition-colors" />
-                    <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">{hook.loading?'...':'查詢'}</button>
+                    <input 
+                        type="text" 
+                        value={hook.term} 
+                        onChange={(e)=>hook.setTerm(e.target.value)} 
+                        placeholder="請輸入歌名並按下搜尋" 
+                        className="flex-1 border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-400 transition-colors" 
+                    />
+                    <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">
+                        {hook.loading?'...':'查詢'}
+                    </button>
                 </form>
                 <div className="text-gray-400 text-xs mb-2">可輸入關鍵字,避開台語字</div>
                 {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
                 {hook.results && (
                     <div className="overflow-x-auto border border-gray-200 rounded">
                         <table className="result-table text-left border-collapse">
-                            <thead><tr>{copyrightHeaders.map((h,i)=><th key={i} style={{width:h.width}}>{typeof h.render==='function'?h.render():h.render}</th>)}</tr></thead>
-                            <tbody>{hook.results.map((row,ri)=><tr key={ri}>{row.filter((_,idx)=>idx!==2).map((c,ci)=><td key={ci} title={typeof c==='string'?c:''}>{ci===7?<a href={c} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>Link</a>:c}</td>)}</tr>)}</tbody>
+                            <thead>
+                                <tr>
+                                    {copyrightHeaders.map((h,i)=><th key={i} style={{width:h.width}}>{typeof h.render==='function'?h.render():h.render}</th>)}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {hook.results.map((row,ri)=>(
+                                    <tr key={ri}>
+                                        {row.filter((_, idx) => idx !== 2).map((c,ci) => (
+                                            <td key={ci} title={typeof c === 'string' ? c : ''}>
+                                                {ci===7 ? <a href={c} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>Link</a> : c}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
                         </table>
                     </div>
                 )}
             </div>
         );
 
-        // 4. 子元件：網頁瀏覽器
-        const WebBrowser = ({ title, url, type = "iframe" }) => {
+        // 4. 子元件：網頁瀏覽器 (內嵌且縮放)
+        const WebBrowser = ({ title, url }) => {
             const [refreshKey, setRefreshKey] = useState(0);
-            if (type === "link") {
-                return (
-                    <div className="browser-frame-container card-shadow">
-                         <div className="browser-toolbar"><div className="browser-title"><i className="fas fa-music text-orange-500"></i> {title}</div></div>
-                         <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-4 text-center">
-                             <i className="fas fa-external-link-alt text-4xl text-orange-500 mb-4"></i>
-                             <p className="text-gray-600 font-bold mb-4">此網站無法內嵌</p>
-                             <a href={url} target="_blank" className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2 rounded shadow transition-colors">點此開啟 {title}</a>
-                         </div>
-                    </div>
-                );
-            }
             return (
                 <div className="browser-frame-container card-shadow">
                     <div className="browser-toolbar">
-                        <div className="browser-title"><i className="fas fa-globe text-blue-500"></i> {title}</div>
+                        <div className="browser-title">
+                            <i className="fas fa-globe text-blue-500"></i>
+                            {title}
+                        </div>
                         <div className="browser-actions">
-                            <button onClick={() => window.open(url, '_blank')} className="browser-btn" title="在新分頁開啟 (跳出)"><i className="fas fa-external-link-alt"></i></button>
-                            <button onClick={() => setRefreshKey(prev => prev + 1)} className="browser-btn" title="重新整理"><i className="fas fa-sync-alt"></i></button>
+                            <button onClick={() => window.open(url, '_blank')} className="browser-btn" title="在新分頁開啟 (跳出)">
+                                <i className="fas fa-external-link-alt"></i>
+                            </button>
+                            <button onClick={() => setRefreshKey(prev => prev + 1)} className="browser-btn" title="重新整理">
+                                <i className="fas fa-sync-alt"></i>
+                            </button>
                         </div>
                     </div>
                     <div className="browser-content-wrapper">
-                        <iframe key={refreshKey} src={url} className="browser-iframe" title={title} />
+                        <iframe 
+                            key={refreshKey}
+                            src={url} 
+                            className="browser-iframe"
+                            title={title}
+                        />
                     </div>
                 </div>
             );
         };
 
         const App = () => {
+            // API 設定
             const API_URL = "https://script.google.com/macros/s/AKfycbzF7XVJK-rIoHBIQvEVF1c4AJJNR4x5f-wkqAaWwCLb9yMflTE3_c9MSEzwwglQQFTwYw/exec";
             
             const [sheetData, setSheetData] = useState(null);
             const [isLoadingInfo, setIsLoadingInfo] = useState(true);
             const [apiError, setApiError] = useState(null);
 
+            // 網頁查詢設定 (移除 MÜST，僅留 TMCA, ACMA)
             const embeddedSites = [
                 { title: "TMCA", url: "https://www.tmca.tw/Home/Search", type: "iframe" },
                 { title: "ACMA", url: "https://www.acma.org.tw/blank-7", type: "iframe" }, 
@@ -296,7 +307,10 @@
                         today: { ...data.infoData.today, date: formatDateSimple(data.infoData.today.date) },
                         nextRecord: { ...data.infoData.nextRecord, date: formatDateSimple(data.infoData.nextRecord.date) },
                         broadcast: Array.isArray(data.infoData.broadcast) ? data.infoData.broadcast.map(item => ({ ...item, date: formatDateSimple(item.date) })) : [],
-                        bonus: { lastMonth: formatBonus(data.infoData.bonus.lastMonth), thisMonth: formatBonus(data.infoData.bonus.thisMonth) }
+                        bonus: { 
+                            lastMonth: formatBonus(data.infoData.bonus.lastMonth),
+                            thisMonth: formatBonus(data.infoData.bonus.thisMonth)
+                        }
                     };
                 } catch (e) { return null; }
             };
@@ -314,6 +328,7 @@
                 range2549: Array(5).fill({ rank: "-", name: "載入中...", rating: "-" })
             };
 
+            // 網頁查詢預設 collapsed: true (縮小)
             const [panels, setPanels] = useState({
                 copyright: { visible: false, collapsed: false },
                 singerList: { visible: false, collapsed: false },
@@ -321,7 +336,7 @@
                 recordedQuery: { visible: false, collapsed: false },
                 singerSungQuery: { visible: false, collapsed: false },
                 haojiQuery: { visible: false, collapsed: false },
-                origSingerQuery: { visible: false, collapsed: false }, // 新增原唱查詢
+                origSingerQuery: { visible: false, collapsed: false },
                 webQuery: { visible: true, collapsed: true } 
             });
 
@@ -351,7 +366,7 @@
             const recorded = useSearch('recorded');
             const singerSung = useSearch('singerSung');
             const haoji = useSearch('haoji');
-            const origSinger = useSearch('origSinger'); // 新增原唱查詢
+            const origSinger = useSearch('origSinger');
 
             const [singerExcludeSung, setSingerExcludeSung] = useState(false);
 
@@ -364,7 +379,7 @@
                         if (key === 'recordedQuery') recorded.clear();
                         if (key === 'singerSungQuery') singerSung.clear();
                         if (key === 'haojiQuery') haoji.clear();
-                        if (key === 'origSingerQuery') origSinger.clear(); // 清除
+                        if (key === 'origSingerQuery') origSinger.clear();
                     }
                     return { ...prev, [key]: { ...prev[key], visible: !prev[key].visible, collapsed: false } };
                 });
@@ -385,7 +400,7 @@
                         
                         {/* 左側欄位 */}
                         <div className="w-full md:w-[28%] flex flex-col gap-3">
-                            {/* ... (左側不變) ... */}
+                            {/* ... (左側內容不變) ... */}
                             <div className="bg-white rounded-lg overflow-hidden card-shadow">
                                 <div className="left-header-blue text-center font-bold py-1 text-sm tracking-wider">今日</div>
                                 <div className="bg-white py-2 flex justify-center items-center gap-2">
@@ -456,6 +471,7 @@
                             <div className="rounded-lg overflow-hidden bg-white card-shadow">
                                 <div className="menu-header text-center font-bold py-2 text-lg">目錄</div>
                                 <div className="flex flex-col bg-white">
+                                    
                                     {/* 第一行：節目資訊 */}
                                     <div className="flex border-b border-gray-100 min-h-[50px]">
                                         <div className="menu-category w-24 flex items-center justify-center p-2 text-sm shrink-0">節目資訊</div>
@@ -464,6 +480,7 @@
                                             <a href={links.program.icebing} target="_blank" className="menu-link text-sm">我愛冰冰SHOW</a>
                                         </div>
                                     </div>
+
                                     {/* 第二行：檔案下載 */}
                                     <div className="flex border-b border-gray-100 min-h-[50px]">
                                         <div className="menu-category w-24 flex items-center justify-center p-2 text-sm shrink-0">檔案下載</div>
@@ -472,6 +489,7 @@
                                             <a href={links.download.authRemake} target="_blank" className="menu-link text-sm">重製授權同意書</a>
                                         </div>
                                     </div>
+
                                     {/* 第三行：版權相關 */}
                                     <div className="flex border-b border-gray-100 min-h-[50px]">
                                         <div className="menu-category w-24 flex items-center justify-center p-2 text-sm shrink-0">版權相關</div>
@@ -480,6 +498,7 @@
                                             <a href={links.copyright.mpa} target="_blank" className="menu-link text-sm">MPA收費紀錄</a>
                                         </div>
                                     </div>
+                                    
                                     {/* 第四行：各類查詢 */}
                                     <div className="flex min-h-[50px]">
                                         <div className="menu-category w-24 flex items-center justify-center p-2 text-sm shrink-0">各類查詢</div>
@@ -492,33 +511,42 @@
                                             {/* 新增原唱查詢按鈕 */}
                                             <button onClick={()=>togglePanelVisibility('origSingerQuery')} className={`menu-link text-sm text-left ${panels.origSingerQuery.visible?'active':''}`}><i className={`fas fa-star mr-1 ${panels.origSingerQuery.visible?'text-orange-500':'text-gray-400'}`}></i>原唱查詢</button>
                                             <button onClick={()=>togglePanelVisibility('haojiQuery')} className={`menu-link text-sm text-left ${panels.haojiQuery.visible?'active':''}`}><i className={`fas fa-compact-disc mr-1 ${panels.haojiQuery.visible?'text-orange-500':'text-gray-400'}`}></i>豪記查詢</button>
-                                            {/* MÜST 按鈕 */}
+                                            {/* MÜST 按鈕 (移除了iframe，改為這裡) */}
                                             <a href={links.copyright.must} target="_blank" className="menu-link text-sm text-left"><i className="fas fa-music mr-1 text-orange-500"></i>MÜST</a>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                             
-                            {/* 網頁查詢區塊 */}
+                            {/* 網頁查詢區塊 (移到目錄下方，移除 MUST 內嵌，僅留 TMCA/ACMA) */}
                             <div className="bg-white rounded-lg overflow-hidden card-shadow mt-2">
                                 <div className="p-3 flex justify-between items-center bg-[#2EA9DF] text-white font-bold text-lg">
-                                    <div className="flex items-center gap-2"><i className="fas fa-globe"></i> 網頁查詢</div>
+                                    <div className="flex items-center gap-2">
+                                        <i className="fas fa-globe"></i> 網頁查詢
+                                    </div>
                                     <button onClick={() => setPanels(prev => ({...prev, webQuery: { ...prev.webQuery, collapsed: !prev.webQuery.collapsed } }))} className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.webQuery.collapsed ? 'down' : 'up'}`}></i></button>
                                 </div>
+                                
                                 {!panels.webQuery.collapsed && (
                                     <div className="p-2 flex flex-col gap-2">
+                                        {/* MÜST 按鈕 (置頂) */}
                                         <div className="flex justify-start">
-                                            <a href={links.copyright.must} target="_blank" className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3 py-1 rounded text-sm inline-flex items-center shadow transition-colors"><i className="fas fa-music mr-2"></i> 前往 MÜST 著作權協會查詢</a>
+                                            <a href={links.copyright.must} target="_blank" className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3 py-1 rounded text-sm inline-flex items-center shadow transition-colors">
+                                                <i className="fas fa-music mr-2"></i> 前往 MÜST 著作權協會查詢
+                                            </a>
                                         </div>
+                                        
+                                        {/* TMCA & ACMA 並排 */}
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                            {embeddedSites.map((site, index) => <WebBrowser key={index} title={site.title} url={site.url} />)}
+                                            {embeddedSites.map((site, index) => (
+                                                <WebBrowser key={index} title={site.title} url={site.url} />
+                                            ))}
                                         </div>
                                     </div>
                                 )}
                             </div>
 
-                            {/* === 查詢面板區 === */}
-                            {/* (既有查詢面板略...) */}
+                            {/* === 查詢面板區 (省略重複部分，邏輯同上) === */}
                             {panels.copyright.visible && (
                                 <div className="search-panel card-shadow">
                                     <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
@@ -537,6 +565,8 @@
                                     )}
                                 </div>
                             )}
+                            
+                            {/* ... 其他查詢面板保持不變 ... */}
                             
                             {panels.recordedQuery.visible && (
                                 <div className="search-panel card-shadow">
@@ -655,8 +685,8 @@
                                     )}
                                 </div>
                             )}
-
-                            {/* 原唱查詢 (新) */}
+                            
+                            {/* 原唱查詢 (新增) */}
                             {panels.origSingerQuery.visible && (
                                 <div className="search-panel card-shadow">
                                     <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
@@ -676,7 +706,10 @@
                                             {origSinger.results && (
                                                 <div className="overflow-x-auto border border-gray-200 rounded">
                                                     <table className="result-table text-left border-collapse">
-                                                        <thead><tr>{origSingerHeaders.map((h,i)=><th key={i} style={{width: h.width}}>{typeof h.render==='function'?h.render():h.render}</th>)}</tr></thead>
+                                                        <thead>
+                                                            {/* 原唱查詢使用 origSingerHeaders */}
+                                                            <tr>{copyrightHeaders.slice(2).map((h,i)=><th key={i} style={{width:h.width}}>{typeof h.render==='function'?h.render():h.render}</th>)}</tr>
+                                                        </thead>
                                                         <tbody>{origSinger.results.map((row,ri)=><tr key={ri}>{row.map((c,ci)=><td key={ci} title={typeof c === 'string' ? c : ''}>{ci===5?<a href={c} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>Link</a>:c}</td>)}</tr>)}</tbody>
                                                     </table>
                                                 </div>
