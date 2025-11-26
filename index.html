@@ -11,7 +11,15 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #FCFAF2; color: #2D3436; padding-bottom: 80px; }
+        
+        /* 增加 padding-bottom 避開 Tiiny 廣告 */
+        body { 
+            font-family: 'Noto Sans TC', sans-serif; 
+            background-color: #FCFAF2; 
+            color: #2D3436; 
+            padding-bottom: 80px; 
+        }
+        
         .header-main { background-color: #F08300; color: white; letter-spacing: 0.15em; box-shadow: 0 4px 0px #C86000; }
         .left-header-blue { background-color: #2EA9DF; color: white; }
         .left-sub-blue { background-color: #A0D8EF; color: #005C85; }
@@ -54,7 +62,12 @@
         .browser-btn:hover { color: #01579B; background-color: rgba(255,255,255,0.5); border-radius: 4px; }
         
         .browser-content-wrapper { flex: 1; width: 100%; height: 100%; overflow: hidden; position: relative; }
-        .browser-iframe { width: 118%; height: 118%; transform: scale(0.85); transform-origin: 0 0; border: none; background: white; position: absolute; top: 0; left: 0; }
+        /* 縮放效果: scale(0.85) */
+        .browser-iframe { 
+            width: 118%; height: 118%; 
+            transform: scale(0.85); transform-origin: 0 0; 
+            border: none; background: white; position: absolute; top: 0; left: 0;
+        }
 
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
@@ -227,7 +240,7 @@
             </div>
         );
 
-        // 4. 子元件：網頁瀏覽器 (內嵌且縮放)
+        // 4. 子元件：網頁瀏覽器
         const WebBrowser = ({ title, url }) => {
             const [refreshKey, setRefreshKey] = useState(0);
             return (
@@ -266,10 +279,10 @@
             const [isLoadingInfo, setIsLoadingInfo] = useState(true);
             const [apiError, setApiError] = useState(null);
 
-            // 網頁查詢設定 (移除 MÜST，僅留 TMCA, ACMA)
+            // 網頁查詢設定 (僅保留 TMCA, ACMA)
             const embeddedSites = [
-                { title: "TMCA", url: "https://www.tmca.tw/Home/Search", type: "iframe" },
-                { title: "ACMA", url: "https://www.acma.org.tw/blank-7", type: "iframe" }, 
+                { title: "TMCA", url: "https://www.tmca.tw/Home/Search" },
+                { title: "ACMA", url: "https://www.acma.org.tw/blank-7" }, 
             ];
 
             useEffect(() => {
@@ -400,7 +413,6 @@
                         
                         {/* 左側欄位 */}
                         <div className="w-full md:w-[28%] flex flex-col gap-3">
-                            {/* ... (左側內容不變) ... */}
                             <div className="bg-white rounded-lg overflow-hidden card-shadow">
                                 <div className="left-header-blue text-center font-bold py-1 text-sm tracking-wider">今日</div>
                                 <div className="bg-white py-2 flex justify-center items-center gap-2">
@@ -508,11 +520,8 @@
                                             <button onClick={()=>togglePanelVisibility('singerList')} className={`menu-link text-sm text-left ${panels.singerList.visible?'active':''}`}><i className={`fas fa-microphone-alt mr-1 ${panels.singerList.visible?'text-orange-500':'text-gray-400'}`}></i>歌手歌單查詢</button>
                                             <button onClick={()=>togglePanelVisibility('singerSungQuery')} className={`menu-link text-sm text-left ${panels.singerSungQuery.visible?'active':''}`}><i className={`fas fa-user-tag mr-1 ${panels.singerSungQuery.visible?'text-orange-500':'text-gray-400'}`}></i>歌手已唱查詢</button>
                                             <button onClick={()=>togglePanelVisibility('epQuery')} className={`menu-link text-sm text-left ${panels.epQuery.visible?'active':''}`}><i className={`fas fa-list-ol mr-1 ${panels.epQuery.visible?'text-orange-500':'text-gray-400'}`}></i>集數查詢</button>
-                                            {/* 新增原唱查詢按鈕 */}
                                             <button onClick={()=>togglePanelVisibility('origSingerQuery')} className={`menu-link text-sm text-left ${panels.origSingerQuery.visible?'active':''}`}><i className={`fas fa-star mr-1 ${panels.origSingerQuery.visible?'text-orange-500':'text-gray-400'}`}></i>原唱查詢</button>
                                             <button onClick={()=>togglePanelVisibility('haojiQuery')} className={`menu-link text-sm text-left ${panels.haojiQuery.visible?'active':''}`}><i className={`fas fa-compact-disc mr-1 ${panels.haojiQuery.visible?'text-orange-500':'text-gray-400'}`}></i>豪記查詢</button>
-                                            {/* MÜST 按鈕 (移除了iframe，改為這裡) */}
-                                            <a href={links.copyright.must} target="_blank" className="menu-link text-sm text-left"><i className="fas fa-music mr-1 text-orange-500"></i>MÜST</a>
                                         </div>
                                     </div>
                                 </div>
@@ -524,12 +533,17 @@
                                     <div className="flex items-center gap-2">
                                         <i className="fas fa-globe"></i> 網頁查詢
                                     </div>
-                                    <button onClick={() => setPanels(prev => ({...prev, webQuery: { ...prev.webQuery, collapsed: !prev.webQuery.collapsed } }))} className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.webQuery.collapsed ? 'down' : 'up'}`}></i></button>
+                                    <button 
+                                        onClick={() => setPanels(prev => ({...prev, webQuery: { ...prev.webQuery, collapsed: !prev.webQuery.collapsed } }))}
+                                        className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors focus:outline-none"
+                                    >
+                                        <i className={`fas fa-chevron-${panels.webQuery.collapsed ? 'down' : 'up'}`}></i>
+                                    </button>
                                 </div>
                                 
                                 {!panels.webQuery.collapsed && (
                                     <div className="p-2 flex flex-col gap-2">
-                                        {/* MÜST 按鈕 (置頂) */}
+                                        {/* MÜST 按鈕 (置頂小按鈕) */}
                                         <div className="flex justify-start">
                                             <a href={links.copyright.must} target="_blank" className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3 py-1 rounded text-sm inline-flex items-center shadow transition-colors">
                                                 <i className="fas fa-music mr-2"></i> 前往 MÜST 著作權協會查詢
@@ -546,7 +560,8 @@
                                 )}
                             </div>
 
-                            {/* === 查詢面板區 (省略重複部分，邏輯同上) === */}
+                            {/* === 查詢面板區 === */}
+                            {/* (既有查詢面板略...) */}
                             {panels.copyright.visible && (
                                 <div className="search-panel card-shadow">
                                     <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
@@ -565,8 +580,6 @@
                                     )}
                                 </div>
                             )}
-                            
-                            {/* ... 其他查詢面板保持不變 ... */}
                             
                             {panels.recordedQuery.visible && (
                                 <div className="search-panel card-shadow">
