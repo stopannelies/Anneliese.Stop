@@ -97,7 +97,7 @@
         };
 
         // ==========================================
-        // 2. 通用表格元件 (含複製 & 過濾 & 浮動視窗)
+        // 2. 通用表格元件 (含複製 & 過濾 & 極簡浮動視窗)
         // ==========================================
         const ResultTable = ({ headers, data, enableCopy, remakeColIndex, mpaColIndex, enableRowSelection, hiddenColumnsInCopy, defaultColumnSelection }) => {
             const [copyMode, setCopyMode] = useState(false);
@@ -105,8 +105,6 @@
             const [selectedRows, setSelectedRows] = useState(new Set());
             const [showToast, setShowToast] = useState(false);
             const [filterRemake, setFilterRemake] = useState(false);
-            
-            // 浮動視窗狀態
             const [popupContent, setPopupContent] = useState(null);
 
             useEffect(() => {
@@ -185,10 +183,9 @@
                                             return (
                                                 <td 
                                                     key={ci} 
-                                                    // 移除 title (hover), 改用 onClick (popup)
+                                                    // 點擊跳出小浮動視窗
                                                     className={`${styleClass} cursor-pointer hover:bg-yellow-50 transition-colors`}
                                                     onClick={() => {
-                                                        // 只有在 非連結 且 非複製模式 下才跳出視窗
                                                         if (!isLink && !copyMode) setPopupContent(c);
                                                     }}
                                                 >
@@ -203,22 +200,17 @@
                     </div>
                     <div className={`toast ${showToast ? 'show' : ''}`}>已複製</div>
 
-                    {/* 浮動視窗 (Popup Modal) */}
+                    {/* 極簡浮動視窗 (取代原生的 Hover) */}
                     {popupContent && (
-                        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setPopupContent(null)}>
-                            <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden animate-pulse" style={{animation: 'none'}} onClick={e => e.stopPropagation()}>
-                                <div className="bg-[#2EA9DF] text-white px-4 py-2 font-bold flex justify-between items-center">
-                                    <span>詳細內容</span>
-                                    <button onClick={() => setPopupContent(null)} className="hover:bg-white/20 rounded p-1"><i className="fas fa-times"></i></button>
-                                </div>
-                                <div className="p-6">
-                                    <div className="bg-gray-50 border border-gray-200 rounded p-4 text-gray-800 text-lg break-words select-text" style={{maxHeight: '60vh', overflowY: 'auto'}}>
-                                        {popupContent}
-                                    </div>
-                                    <div className="mt-4 text-center text-sm text-gray-500">
-                                        (您可以直接選取文字並複製)
-                                    </div>
-                                </div>
+                        <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={() => setPopupContent(null)}>
+                            {/* 透明背景遮罩 */}
+                            <div className="absolute inset-0 bg-transparent"></div> 
+                            {/* 內容卡片 */}
+                            <div className="relative bg-white border border-gray-300 shadow-2xl rounded-lg px-4 py-3 max-w-xs text-sm text-gray-800 select-text break-words animate-pulse" style={{animation: 'none'}} onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setPopupContent(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow hover:bg-red-600 focus:outline-none">
+                                    <i className="fas fa-times"></i>
+                                </button>
+                                {popupContent}
                             </div>
                         </div>
                     )}
@@ -231,7 +223,7 @@
         const origSingerHeaders = [{render:"歌名",width:"150px"},{render:"重製",width:"55px"},{render:"MPA",width:"55px"},{render:"首句歌詞",width:"160px"},{render:"原唱人",width:"70px"},{render:"連結",width:"60px"},{render:"特殊備註",width:"120px"},{render:"作詞人",width:"70px"},{render:()=><span>詞<br/>公權</span>,width:"55px"},{render:"詞重權",width:"70px"},{render:()=><span>詞<br/>百分比</span>,width:"55px"},{render:"作曲人",width:"70px"},{render:"曲公權",width:"55px"},{render:"曲重權",width:"70px"},{render:()=><span>曲<br/>百分比</span>,width:"55px"},{render:"編曲",width:"70px"}];
         const recordedHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"歌名",width:"150px"},{title:"演唱者",width:"70px"},{title:"組曲",width:"40px"},{title:"錄影日期",width:"90px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
         const singerListHeaders = [{title:"唱過",width:"50px"},{title:"日期",width:"80px"},{title:"歌手",width:"70px"},{title:"歌名",width:"150px"},{title:"原唱",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"180px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"}];
-        const epHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"曲目",width:"140px"},{title:"演唱者",width:"90px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"60px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"100px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
+        const epHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"70px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"60px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"100px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
         const singerSungHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"100px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"90px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"60px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"120px"}];
         const haojiHeaders = [{title:"位置",width:"80px"},{title:"歌名",width:"150px"},{title:"原唱人",width:"90px"},{title:"作詞人",width:"90px"},{title:"作曲人",width:"90px"},{title:"版權資訊",width:"140px"},{title:"首句歌詞",width:"160px"},{title:"備註",width:"100px"}];
 
@@ -239,7 +231,13 @@
         const links = {
             download: { authPublic: "https://docs.google.com/document/d/1clnHPqpcsxw1eZromz-LdavIyeA5jUKDGxia8Tg2Bk4/export?format=docx", authRemake: "https://docs.google.com/document/d/17Pq1NKTkKWNBZh0FEFkHOAh-TJO6Ypc2HECIy0RcpnE/export?format=docx" },
             program: { schedule: "https://docs.google.com/spreadsheets/d/1WULc6ENn4a6_VolJX_1rMjKnRbNzf3SwPRr7geLXnCQ/edit?gid=580247079#gid=580247079", icebing: "https://docs.google.com/spreadsheets/u/0/d/1lQcpINzgcsEWdl-PZpUTxpiFA90KE6DnN_70xFwl8fk/edit" },
-            copyright: { member: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=1616151799#gid=1616151799", mpa: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1591903723#gid=1591903723", querySource: "https://docs.google.com/spreadsheets/d/1KxHAmz57FOu8ti8l_Zd96lrwCfO5wexPRV0jsvNaVGA/edit?gid=0#gid=0", must: "https://www.must.org.tw/tw/chinese_musical/02.aspx", origQuerySource: "https://docs.google.com/spreadsheets/d/1picJxZ8ue9DM7EHS86TdVAHdr-Qty0nd5eEMvOXCUIY/edit?gid=348730547#gid=348730547" },
+            copyright: { 
+                member: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=1616151799#gid=1616151799", 
+                mpa: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1591903723#gid=1591903723", 
+                querySource: "https://docs.google.com/spreadsheets/d/1KxHAmz57FOu8ti8l_Zd96lrwCfO5wexPRV0jsvNaVGA/edit?gid=0#gid=0",
+                must: "https://www.must.org.tw/tw/chinese_musical/02.aspx",
+                origQuerySource: "https://docs.google.com/spreadsheets/d/1picJxZ8ue9DM7EHS86TdVAHdr-Qty0nd5eEMvOXCUIY/edit?gid=348730547#gid=348730547" 
+            },
             others: { singerListSource: "https://docs.google.com/spreadsheets/d/1mt4dVA3_VmqzyKjf0jbmYQMzJl0sef4G2hcqve7KDQ0/edit?gid=530920512#gid=530920512", epQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=622192856#gid=622192856", recordedQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1872621493#gid=1872621493", singerSungQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=399230212#gid=399230212", haojiQuerySource: "https://docs.google.com/spreadsheets/d/1BiIWEn1Yh22nOZM_z-HFyNryX_AsjmjnH366VUDRuPg/edit?gid=829761523#gid=829761523", haojiQuery: "#" }
         };
 
@@ -248,8 +246,16 @@
             <div className="mb-4 border-b border-gray-200 pb-4 last:border-0 last:pb-0">
                 <div className="font-bold text-gray-500 text-sm mb-2">{label}</div>
                 <form onSubmit={(e)=>{e.preventDefault();hook.search(hook.term)}} className="flex gap-2 mb-1">
-                    <input type="text" value={hook.term} onChange={(e)=>hook.setTerm(e.target.value)} placeholder="請輸入歌名並按下搜尋" className="flex-1 border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-400 transition-colors" />
-                    <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">{hook.loading?'...':'查詢'}</button>
+                    <input 
+                        type="text" 
+                        value={hook.term} 
+                        onChange={(e)=>hook.setTerm(e.target.value)} 
+                        placeholder="請輸入歌名並按下搜尋" 
+                        className="flex-1 border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-400 transition-colors" 
+                    />
+                    <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">
+                        {hook.loading?'...':'查詢'}
+                    </button>
                 </form>
                 <div className="text-gray-400 text-xs mb-2">可輸入關鍵字,避開台語字</div>
                 {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
@@ -330,7 +336,6 @@
                     {apiError && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 text-center"><strong className="font-bold">讀取錯誤！</strong> <span className="block sm:inline">{apiError}</span></div>}
                     <div className="header-main text-center py-2 text-xl font-bold rounded-lg mb-3">綜藝👍級棒</div>
                     <div className="flex flex-col md:flex-row gap-3 items-start">
-                        {/* 左側欄位 (省略) */}
                         <div className="w-full md:w-[28%] flex flex-col gap-3">
                             <div className="bg-white rounded-lg overflow-hidden card-shadow"><div className="left-header-blue text-center font-bold py-1 text-sm tracking-wider">今日</div><div className="bg-white py-2 flex justify-center items-center gap-2">{isLoadingInfo?<span className="text-gray-400 animate-pulse">...</span>:<><span className="text-xl font-bold text-gray-800 font-compact">{infoData.today.date}</span><span className="text-lg font-medium text-gray-500 font-compact">{infoData.today.day}</span></>}</div><div className="left-header-blue text-center font-bold py-1 text-sm tracking-wider border-t border-white/20">下次錄影</div><div className="bg-white py-2 flex justify-center items-center gap-2">{isLoadingInfo?<span className="text-gray-400 animate-pulse">...</span>:<><span className="text-xl font-bold text-gray-800 font-compact">{infoData.nextRecord.date}</span><span className="text-lg font-medium text-gray-500 font-compact">{infoData.nextRecord.day}</span></>}</div><div className="left-header-blue text-center font-bold py-1 text-sm tracking-wider border-t border-white/20">剩餘天數</div><div className="bg-white py-2 text-center">{isLoadingInfo?<span className="text-gray-400 animate-pulse">-</span>:<span className="text-3xl font-bold text-gray-800 font-compact">{infoData.nextRecord.daysLeft}</span>}</div></div>
                             <div className="bg-white rounded-lg overflow-hidden card-shadow">{infoData.broadcast.map((item,idx)=>(<div key={idx} className="flex border-b last:border-0 border-gray-100"><div className="left-header-blue w-1/3 flex items-center justify-center text-xs font-bold p-2 whitespace-pre-line leading-relaxed">{item.title}</div><div className="w-1/3 flex items-center justify-center font-bold text-base text-gray-700 border-r border-gray-100 bg-white">{item.date}</div><div className="w-1/3 flex items-center justify-center text-gray-600 font-bold text-base bg-white">{item.days}</div></div>))}</div>
@@ -361,7 +366,6 @@
                                     </div>
                                 </div>
                             </div>
-                            
                             <div className="bg-white rounded-lg overflow-hidden card-shadow mt-2">
                                 <div className="p-3 flex justify-between items-center bg-[#2EA9DF] text-white font-bold text-lg"><div className="flex items-center gap-2"><i className="fas fa-globe"></i> 網頁查詢</div><button onClick={() => setPanels(prev => ({...prev, webQuery: { ...prev.webQuery, collapsed: !prev.webQuery.collapsed } }))} className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.webQuery.collapsed ? 'down' : 'up'}`}></i></button></div>
                                 {!panels.webQuery.collapsed && (<div className="p-2 flex flex-col gap-2"><div className="flex justify-start"><a href={links.copyright.must} target="_blank" className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3 py-1 rounded text-sm inline-flex items-center shadow transition-colors"><i className="fas fa-music mr-2"></i> 前往 MÜST 著作權協會查詢</a></div><div className="grid grid-cols-1 md:grid-cols-2 gap-2">{embeddedSites.map((site, index) => <WebBrowser key={index} title={site.title} url={site.url} />)}</div></div>)}
