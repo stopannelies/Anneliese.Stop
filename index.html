@@ -26,14 +26,12 @@
         .search-panel { background-color: #FFFFFF; border: 2px solid #2EA9DF; border-radius: 8px; overflow: hidden; margin-top: 10px; transition: all 0.3s ease; }
         .search-header { background-color: #E6F4F1; color: #2D3436; font-weight: bold; }
         
-        /* 表格樣式 */
         .result-table { table-layout: fixed; width: 100%; }
         .result-table th { 
             background-color: #E2E8F0; color: #2D3436; font-size: 0.8rem; 
             padding: 4px 4px; vertical-align: middle; border: 1px solid #CBD5E0; 
             font-weight: bold; text-align: center; line-height: 1.1; height: 40px; 
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-            position: relative;
         }
         .result-table td { 
             padding: 6px 4px; font-size: 0.9rem; border: 1px solid #E2E8F0; 
@@ -46,7 +44,6 @@
         .card-shadow { box-shadow: 0 2px 5px rgba(0,0,0,0.08); border-radius: 6px; border: 1px solid #E5E5E5; }
         .font-compact { letter-spacing: -0.02em; }
 
-        /* 網頁查詢視窗樣式 */
         .browser-frame-container { border: 2px solid #A0D8EF; border-radius: 6px; overflow: hidden; background: white; height: 350px; display: flex; flex-direction: column; }
         .browser-toolbar { background: #E1F5FE; padding: 4px 8px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #B3E5FC; height: 32px; }
         .browser-title { font-weight: bold; color: #0277BD; font-size: 0.8rem; display: flex; align-items: center; gap: 4px; }
@@ -56,7 +53,6 @@
         .browser-iframe { width: 118%; height: 118%; transform: scale(0.85); transform-origin: 0 0; border: none; background: white; position: absolute; top: 0; left: 0; }
         .browser-content-wrapper { flex: 1; width: 100%; height: 100%; overflow: hidden; position: relative; }
 
-        /* Toast 提示框 */
         .toast {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background-color: rgba(0, 0, 0, 0.8); color: white; padding: 10px 20px;
@@ -64,7 +60,7 @@
             transition: opacity 0.3s ease-in-out; pointer-events: none;
         }
         .toast.show { opacity: 1; }
-
+        
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
@@ -75,152 +71,85 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // ==========================================
-        // 1. 定義樣式判斷邏輯
-        // ==========================================
-        // 判斷重製欄位樣式
+        // 1. 樣式判斷
         const getRemakeStyle = (text) => {
             if (!text) return "";
             const t = text.toString();
-            if (["大棠", "吉馬家", "林垂立", "奇歌", "金光", "ACMA", "無"].some(k => t.includes(k))) 
-                return "bg-red-50 text-red-600 font-bold"; // 紅色警示
-            if (t.includes("MPA")) 
-                return "text-orange-500 font-bold"; // 橘色警示
-            if (["豪記", "TMCA", "時藝", "動脈", "放音樂", "穩盈", "華特"].includes(t)) 
-                return "text-green-600 font-bold"; // 綠色安全
+            if (["大棠", "吉馬家", "林垂立", "奇歌", "金光", "ACMA", "無"].some(k => t.includes(k))) return "bg-red-50 text-red-600 font-bold";
+            if (t.includes("MPA")) return "text-orange-500 font-bold";
+            if (["豪記", "TMCA", "時藝", "動脈", "放音樂", "穩盈", "華特"].includes(t)) return "text-green-600 font-bold";
             return "";
         };
-
-        // 判斷是否為紅色警示 (用於過濾)
         const isRedRemake = (text) => {
             if (!text) return false;
             const t = text.toString();
             return ["大棠", "吉馬家", "林垂立", "奇歌", "金光", "ACMA", "無"].some(k => t.includes(k));
         };
+        // MPA 樣式
+        const getMPAStyle = (text) => {
+            if (!text) return "";
+            if (text.toString() === "無收費") return "bg-red-500 text-white font-bold px-1 rounded";
+            return "";
+        };
 
-        // ==========================================
-        // 2. 通用表格元件 (含複製 & 過濾功能)
-        // ==========================================
-        const ResultTable = ({ headers, data, enableCopy, remakeColIndex }) => {
+        // 2. 通用表格 (含複製功能)
+        const ResultTable = ({ headers, data, enableCopy, remakeColIndex, mpaColIndex }) => {
             const [copyMode, setCopyMode] = useState(false);
             const [selectedCols, setSelectedCols] = useState([]);
             const [showToast, setShowToast] = useState(false);
-            const [filterRemake, setFilterRemake] = useState(false); // 預設不過濾
+            const [filterRemake, setFilterRemake] = useState(false);
 
-            // 初始化全選
-            useEffect(() => {
-                if (headers) setSelectedCols(headers.map((_, i) => i));
-            }, [headers]);
+            useEffect(() => { if (headers) setSelectedCols(headers.map((_, i) => i)); }, [headers]);
 
             const handleCopy = () => {
-                const filteredData = filterRemake && remakeColIndex !== undefined
-                    ? data.filter(row => !isRedRemake(row[remakeColIndex]))
-                    : data;
-
-                const text = filteredData.map(row => 
-                    row.filter((_, i) => selectedCols.includes(i)).join('\t')
-                ).join('\n');
-                
+                const filteredData = filterRemake && remakeColIndex !== undefined ? data.filter(row => !isRedRemake(row[remakeColIndex])) : data;
+                const text = filteredData.map(row => row.filter((_, i) => selectedCols.includes(i)).join('\t')).join('\n');
                 navigator.clipboard.writeText(text).then(() => {
-                    setShowToast(true);
-                    setTimeout(() => setShowToast(false), 2000);
-                    setCopyMode(false);
+                    setShowToast(true); setTimeout(() => setShowToast(false), 2000); setCopyMode(false);
                 });
             };
-
-            const toggleCol = (idx) => {
-                setSelectedCols(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
-            };
-
-            // 實際顯示的資料 (處理過濾)
-            const displayData = (filterRemake && remakeColIndex !== undefined)
-                ? data.filter(row => !isRedRemake(row[remakeColIndex]))
-                : data;
+            
+            const toggleCol = (idx) => setSelectedCols(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
+            const displayData = (filterRemake && remakeColIndex !== undefined) ? data.filter(row => !isRedRemake(row[remakeColIndex])) : data;
 
             return (
                 <div className="relative">
-                    {/* 功能列 (複製按鈕) */}
                     {enableCopy && (
                         <div className="flex justify-end mb-2 gap-2">
                             {!copyMode ? (
-                                <button onClick={() => setCopyMode(true)} className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded border border-gray-300 flex items-center">
-                                    <i className="fas fa-clipboard mr-1"></i> 複製
-                                </button>
+                                <button onClick={() => setCopyMode(true)} className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded border border-gray-300 flex items-center"><i className="fas fa-clipboard mr-1"></i> 複製</button>
                             ) : (
-                                <>
-                                    <button onClick={handleCopy} className="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded shadow flex items-center">
-                                        <i className="fas fa-check mr-1"></i> 確認複製
-                                    </button>
-                                    <button onClick={() => setCopyMode(false)} className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded shadow flex items-center">
-                                        <i className="fas fa-times mr-1"></i> 取消
-                                    </button>
-                                </>
+                                <><button onClick={handleCopy} className="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded shadow flex items-center"><i className="fas fa-check mr-1"></i> 確認複製</button><button onClick={() => setCopyMode(false)} className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded shadow flex items-center"><i className="fas fa-times mr-1"></i> 取消</button></>
                             )}
                         </div>
                     )}
-
                     <div className="overflow-x-auto border border-gray-200 rounded">
                         <table className="result-table text-left border-collapse">
                             <thead>
-                                {/* 複製模式下的勾選框列 */}
-                                {copyMode && (
-                                    <tr className="bg-gray-50 border-b border-gray-200">
-                                        {headers.map((_, i) => (
-                                            <th key={i} className="text-center p-1">
-                                                <input type="checkbox" checked={selectedCols.includes(i)} onChange={() => toggleCol(i)} className="cursor-pointer" />
-                                            </th>
-                                        ))}
-                                    </tr>
-                                )}
-                                <tr>
-                                    {headers.map((h, i) => (
-                                        <th key={i} style={{width: h.width}}>
-                                            <div className="flex items-center justify-center gap-1">
-                                                {typeof h.render === 'function' ? h.render() : (h.title || h.render)}
-                                                {/* 重製欄位過濾器 */}
-                                                {remakeColIndex === i && (
-                                                    <button 
-                                                        onClick={() => setFilterRemake(!filterRemake)}
-                                                        className={`ml-1 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${filterRemake ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}
-                                                        title={filterRemake ? "顯示所有 (包含紅色警示)" : "隱藏紅色警示內容"}
-                                                    >
-                                                        <i className="fas fa-filter text-xs"></i>
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </th>
-                                    ))}
-                                </tr>
+                                {copyMode && <tr className="bg-gray-50 border-b border-gray-200">{headers.map((_, i) => <th key={i} className="text-center p-1"><input type="checkbox" checked={selectedCols.includes(i)} onChange={() => toggleCol(i)} className="cursor-pointer" /></th>)}</tr>}
+                                <tr>{headers.map((h, i) => <th key={i} style={{width: h.width}}><div className="flex items-center justify-center gap-1">{typeof h.render === 'function' ? h.render() : (h.title || h.render)}{remakeColIndex === i && <button onClick={() => setFilterRemake(!filterRemake)} className={`ml-1 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${filterRemake ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}><i className="fas fa-filter text-xs"></i></button>}</div></th>)}</tr>
                             </thead>
                             <tbody>
                                 {displayData.map((row, ri) => (
                                     <tr key={ri}>
                                         {row.map((c, ci) => {
-                                            // 判斷是否為重製欄位，套用樣式
-                                            const styleClass = (ci === remakeColIndex) ? getRemakeStyle(c) : "";
-                                            
-                                            // 判斷是否為連結欄位 (各表不同，這裡簡單判斷內容是否為網址，或由父層傳入索引)
-                                            // 為了通用，這裡簡單判斷是否為 http 開頭
+                                            let styleClass = "";
+                                            if (ci === remakeColIndex) styleClass = getRemakeStyle(c);
+                                            if (ci === mpaColIndex) styleClass = getMPAStyle(c);
                                             const isLink = (typeof c === 'string' && c.startsWith('http'));
-                                            
-                                            return (
-                                                <td key={ci} title={typeof c === 'string' ? c : ''} className={styleClass}>
-                                                    {isLink ? <a href={c} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>Link</a> : c}
-                                                </td>
-                                            );
+                                            return <td key={ci} title={typeof c === 'string' ? c : ''} className={styleClass}>{isLink ? <a href={c} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>Link</a> : c}</td>;
                                         })}
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
                     </div>
-                    {/* Toast */}
                     <div className={`toast ${showToast ? 'show' : ''}`}>已複製</div>
                 </div>
             );
         };
 
-        // 3. 標題定義 (版權 & 歌單歌名 移除了 "串", 索引偏移已在 GAS 處理)
+        // 3. 標題定義
         const copyrightHeaders = [
             {render:()=><span>次數<span className="header-small">(無除夕)</span></span>, width:"50px"},
             {render:()=><span>唱過<span className="header-small">(無45轉)</span></span>, width:"70px"},
@@ -240,11 +169,11 @@
             {render:"曲重權", width:"70px"}, 
             {render:()=><span>曲<br/>百分比</span>, width:"55px"}, 
             {render:"編曲", width:"70px"} 
-        ]; // 重製 Index = 3
+        ]; // 重製=3, MPA=4
 
         const origSingerHeaders = [
             {render:"歌名", width:"150px"},
-            {render:"重製", width:"55px"}, // Index = 1
+            {render:"重製", width:"55px"}, 
             {render:"MPA", width:"55px"},  
             {render:"首句歌詞", width:"160px"},
             {render:"原唱人", width:"70px"}, 
@@ -259,7 +188,7 @@
             {render:"曲重權", width:"70px"}, 
             {render:()=><span>曲<br/>百分比</span>, width:"55px"}, 
             {render:"編曲", width:"70px"} 
-        ]; 
+        ]; // 重製=1, MPA=2
 
         const recordedHeaders = [
             {title:"集數", width:"50px"},
@@ -270,7 +199,7 @@
             {title:"組曲", width:"40px"},
             {title:"錄影日期", width:"90px"},
             {title:"錄影日期", width:"90px"},
-            {title:"重製", width:"55px"}, // Index = 8
+            {title:"重製", width:"55px"},
             {title:"MPA", width:"55px"},
             {title:"首句歌詞", width:"160px"},
             {title:"原唱人", width:"70px"},
@@ -285,7 +214,7 @@
             {title:"曲重權", width:"70px"},
             {title:"曲百分比", width:"55px"},
             {title:"編曲", width:"70px"}
-        ];
+        ]; // 重製=8, MPA=9
 
         const singerListHeaders = [
             {title:"唱過", width:"50px"},
@@ -293,13 +222,13 @@
             {title:"歌手", width:"70px"},
             {title:"歌名", width:"150px"},
             {title:"原唱", width:"90px"},
-            {title:"重製", width:"55px"}, // Index = 5
+            {title:"重製", width:"55px"},
             {title:"MPA", width:"55px"},
             {title:"首句歌詞", width:"180px"},
             {title:"原唱人", width:"70px"},
             {title:"連結", width:"60px"},
             {title:"特殊備註", width:"120px"}
-        ];
+        ]; // 重製=5, MPA=6
 
         const epHeaders = [
             {title:"集數", width:"50px"},
@@ -309,7 +238,7 @@
             {title:"演唱者", width:"70px"},
             {title:"組曲", width:"50px"},
             {title:"錄影日期", width:"90px"},
-            {title:"重製", width:"55px"}, // Index = 7
+            {title:"重製", width:"55px"},
             {title:"MPA", width:"55px"},
             {title:"首句歌詞", width:"160px"},
             {title:"原唱人", width:"90px"},
@@ -324,7 +253,7 @@
             {title:"曲重權", width:"70px"},
             {title:"曲百分比", width:"55px"},
             {title:"編曲", width:"70px"}
-        ];
+        ]; // 重製=7, MPA=8
 
         const singerSungHeaders = [
             {title:"集數", width:"50px"},
@@ -334,13 +263,13 @@
             {title:"演唱者", width:"90px"},
             {title:"組曲", width:"50px"},
             {title:"錄影日期", width:"90px"},
-            {title:"重製", width:"60px"}, // Index = 7
+            {title:"重製", width:"60px"},
             {title:"MPA", width:"70px"}, 
             {title:"首句歌詞", width:"160px"},
             {title:"原唱人", width:"90px"},
             {title:"連結", width:"70px"},
             {title:"特殊備註", width:"120px"}
-        ];
+        ]; // 重製=7, MPA=8
 
         const haojiHeaders = [
             {title:"位置", width:"80px"},
@@ -353,61 +282,36 @@
             {title:"備註", width:"100px"}
         ];
 
-        // 4. 連結設定
         const links = {
             download: { authPublic: "https://docs.google.com/document/d/1clnHPqpcsxw1eZromz-LdavIyeA5jUKDGxia8Tg2Bk4/export?format=docx", authRemake: "https://docs.google.com/document/d/17Pq1NKTkKWNBZh0FEFkHOAh-TJO6Ypc2HECIy0RcpnE/export?format=docx" },
             program: { schedule: "https://docs.google.com/spreadsheets/d/1WULc6ENn4a6_VolJX_1rMjKnRbNzf3SwPRr7geLXnCQ/edit?gid=580247079#gid=580247079", icebing: "https://docs.google.com/spreadsheets/u/0/d/1lQcpINzgcsEWdl-PZpUTxpiFA90KE6DnN_70xFwl8fk/edit" },
-            copyright: { 
-                member: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=1616151799#gid=1616151799", 
-                mpa: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1591903723#gid=1591903723", 
-                querySource: "https://docs.google.com/spreadsheets/d/1KxHAmz57FOu8ti8l_Zd96lrwCfO5wexPRV0jsvNaVGA/edit?gid=0#gid=0",
-                must: "https://www.must.org.tw/tw/chinese_musical/02.aspx",
-                origQuerySource: "https://docs.google.com/spreadsheets/d/1picJxZ8ue9DM7EHS86TdVAHdr-Qty0nd5eEMvOXCUIY/edit?gid=348730547#gid=348730547"
-            },
+            copyright: { member: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=1616151799#gid=1616151799", mpa: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1591903723#gid=1591903723", querySource: "https://docs.google.com/spreadsheets/d/1KxHAmz57FOu8ti8l_Zd96lrwCfO5wexPRV0jsvNaVGA/edit?gid=0#gid=0", must: "https://www.must.org.tw/tw/chinese_musical/02.aspx", origQuerySource: "https://docs.google.com/spreadsheets/d/1picJxZ8ue9DM7EHS86TdVAHdr-Qty0nd5eEMvOXCUIY/edit?gid=348730547#gid=348730547" },
             others: { singerListSource: "https://docs.google.com/spreadsheets/d/1mt4dVA3_VmqzyKjf0jbmYQMzJl0sef4G2hcqve7KDQ0/edit?gid=530920512#gid=530920512", epQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=622192856#gid=622192856", recordedQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1872621493#gid=1872621493", singerSungQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=399230212#gid=399230212", haojiQuerySource: "https://docs.google.com/spreadsheets/d/1BiIWEn1Yh22nOZM_z-HFyNryX_AsjmjnH366VUDRuPg/edit?gid=829761523#gid=829761523", haojiQuery: "#" }
         };
 
-        // 5. 子元件：查詢區塊 (版權查詢使用 - 支援多欄位搜尋)
-        const CopyrightSearchBlock = ({ hook, label, headers, enableCopy, remakeColIndex }) => (
+        const CopyrightSearchBlock = ({ hook, label, headers, enableCopy, remakeColIndex, mpaColIndex }) => (
             <div className="mb-4 border-b border-gray-200 pb-4 last:border-0 last:pb-0">
                 <div className="font-bold text-gray-500 text-sm mb-2">{label}</div>
                 <form onSubmit={(e)=>{e.preventDefault();hook.search(hook.term)}} className="flex gap-2 mb-1">
-                    <input 
-                        type="text" 
-                        value={hook.term} 
-                        onChange={(e)=>hook.setTerm(e.target.value)} 
-                        placeholder="請輸入歌名並按下搜尋" 
-                        className="flex-1 border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-400 transition-colors" 
-                    />
-                    <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">
-                        {hook.loading?'...':'查詢'}
-                    </button>
+                    <input type="text" value={hook.term} onChange={(e)=>hook.setTerm(e.target.value)} placeholder="請輸入歌名並按下搜尋" className="flex-1 border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-400 transition-colors" />
+                    <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">{hook.loading?'...':'查詢'}</button>
                 </form>
                 <div className="text-gray-400 text-xs mb-2">可輸入關鍵字,避開台語字</div>
                 {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
-                {hook.results && <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} />}
+                {hook.results && <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} />}
             </div>
         );
         
-        // 6. 子元件：通用查詢面板 (單一搜尋框)
-        const SimpleSearchPanel = ({ hook, placeholder, headers, enableCopy, remakeColIndex, note, extraControl }) => (
+        const SimpleSearchPanel = ({ hook, placeholder, headers, enableCopy, remakeColIndex, mpaColIndex, note, extraControl }) => (
             <div className="p-4 bg-white">
                 <form onSubmit={(e)=>{e.preventDefault();hook.search(hook.term)}} className="flex gap-2 mb-1 items-center">
-                    <input 
-                        type="text" 
-                        value={hook.term} 
-                        onChange={(e)=>hook.setTerm(e.target.value)} 
-                        placeholder={placeholder} 
-                        className="flex-1 border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-400 transition-colors" 
-                    />
+                    <input type="text" value={hook.term} onChange={(e)=>hook.setTerm(e.target.value)} placeholder={placeholder} className="flex-1 border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-400 transition-colors" />
                     {extraControl}
-                    <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">
-                        {hook.loading?'...':'查詢'}
-                    </button>
+                    <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">{hook.loading?'...':'查詢'}</button>
                 </form>
                 {note && <div className="text-gray-400 text-xs mb-2">{note}</div>}
                 {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
-                {hook.results && <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} />}
+                {hook.results && <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} />}
             </div>
         );
 
@@ -457,22 +361,20 @@
             const singerList = useSearch('singerList'); const songList = useSearch('songList'); const epQuery = useSearch('ep');
             const recorded = useSearch('recorded'); const singerSung = useSearch('singerSung'); const haoji = useSearch('haoji');
             const origSinger = useSearch('origSinger');
-
             const [singerExcludeSung, setSingerExcludeSung] = useState(false);
             const [songListExcludeSung, setSongListExcludeSung] = useState(false);
 
             const togglePanelVisibility = (key) => setPanels(prev => { if(prev[key].visible){ if(key==='copyright'){copyright1.clear();copyright2.clear();copyright3.clear();} else if(key==='singerList')singerList.clear(); else if(key==='songList')songList.clear(); else if(key==='epQuery')epQuery.clear(); else if(key==='recordedQuery')recorded.clear(); else if(key==='singerSungQuery')singerSung.clear(); else if(key==='haojiQuery')haoji.clear(); else if(key==='origSingerQuery')origSinger.clear(); } return {...prev,[key]:{...prev[key],visible:!prev[key].visible,collapsed:false}}; });
             const togglePanelCollapse = (key) => setPanels(prev => ({...prev,[key]:{...prev[key],collapsed:!prev[key].collapsed}}));
+            const handleSingerCheckboxChange = (e) => { const checked = e.target.checked; setSingerExcludeSung(checked); if(singerList.term) singerList.search(singerList.term, checked); };
+            const handleSongListCheckboxChange = (e) => { const checked = e.target.checked; setSongListExcludeSung(checked); if(songList.term) songList.search(songList.term, checked); };
 
             return (
                 <div className="max-w-6xl mx-auto p-3 min-h-screen">
                     {apiError && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-2 text-center"><strong className="font-bold">讀取錯誤！</strong> <span className="block sm:inline">{apiError}</span></div>}
                     <div className="header-main text-center py-2 text-xl font-bold rounded-lg mb-3">綜藝👍級棒</div>
                     <div className="flex flex-col md:flex-row gap-3 items-start">
-                        
-                        {/* 左側欄位 (保持不變) */}
                         <div className="w-full md:w-[28%] flex flex-col gap-3">
-                            {/* (Info & Ratings omitted for brevity, same as before) */}
                             <div className="bg-white rounded-lg overflow-hidden card-shadow"><div className="left-header-blue text-center font-bold py-1 text-sm tracking-wider">今日</div><div className="bg-white py-2 flex justify-center items-center gap-2">{isLoadingInfo?<span className="text-gray-400 animate-pulse">...</span>:<><span className="text-xl font-bold text-gray-800 font-compact">{infoData.today.date}</span><span className="text-lg font-medium text-gray-500 font-compact">{infoData.today.day}</span></>}</div><div className="left-header-blue text-center font-bold py-1 text-sm tracking-wider border-t border-white/20">下次錄影</div><div className="bg-white py-2 flex justify-center items-center gap-2">{isLoadingInfo?<span className="text-gray-400 animate-pulse">...</span>:<><span className="text-xl font-bold text-gray-800 font-compact">{infoData.nextRecord.date}</span><span className="text-lg font-medium text-gray-500 font-compact">{infoData.nextRecord.day}</span></>}</div><div className="left-header-blue text-center font-bold py-1 text-sm tracking-wider border-t border-white/20">剩餘天數</div><div className="bg-white py-2 text-center">{isLoadingInfo?<span className="text-gray-400 animate-pulse">-</span>:<span className="text-3xl font-bold text-gray-800 font-compact">{infoData.nextRecord.daysLeft}</span>}</div></div>
                             <div className="bg-white rounded-lg overflow-hidden card-shadow">{infoData.broadcast.map((item,idx)=>(<div key={idx} className="flex border-b last:border-0 border-gray-100"><div className="left-header-blue w-1/3 flex items-center justify-center text-xs font-bold p-2 whitespace-pre-line leading-relaxed">{item.title}</div><div className="w-1/3 flex items-center justify-center font-bold text-base text-gray-700 border-r border-gray-100 bg-white">{item.date}</div><div className="w-1/3 flex items-center justify-center text-gray-600 font-bold text-base bg-white">{item.days}</div></div>))}</div>
                             <div className="bg-white rounded-lg overflow-hidden card-shadow text-center"><div className="left-sub-blue font-bold py-2 text-base">本週播出</div><div className="bg-white p-3 border-t border-gray-100"><div className="flex flex-row justify-center items-center gap-2"><span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded font-bold text-lg border border-gray-200">{infoData.weekEp.ep}</span><span className="font-bold text-gray-700 text-sm text-left">{infoData.weekEp.title}</span></div></div></div>
@@ -480,8 +382,6 @@
                             <div className="border border-purple-200 rounded-lg overflow-hidden card-shadow"><div className="rating-purple-header text-center font-bold py-1 text-base">25-49前五</div><div className="rating-bg-light p-2 space-y-1">{ratingData.range2549.map((row,idx)=>(<div key={idx} className="flex text-sm items-center border-b border-gray-200/60 pb-1 last:border-0 last:pb-0"><div className="w-6 font-bold text-purple-700 text-center shrink-0 text-base font-compact">{row.rank}</div><div className="flex-1 whitespace-pre-line leading-tight text-gray-700 px-2 text-xs font-medium">{row.name}</div><div className="w-10 text-right font-bold text-gray-600 text-sm shrink-0 font-compact">{row.rating}</div></div>))}</div></div>
                             <div className="rounded-lg overflow-hidden card-shadow text-center border border-pink-200"><div className="bonus-header font-bold py-1.5 text-sm">上月可領撫慰金的集數</div><div className="bg-white py-1.5 font-bold text-2xl bonus-text font-compact">{infoData.bonus.lastMonth}</div><div className="bonus-header font-bold py-1.5 text-sm border-t border-white/20">本月可領撫慰金的集數</div><div className="bg-white py-1.5 font-bold text-2xl bonus-text font-compact">{infoData.bonus.thisMonth}</div></div>
                         </div>
-
-                        {/* 右側欄位 */}
                         <div className="w-full md:w-[72%] flex flex-col gap-3">
                             <div className="rounded-lg overflow-hidden bg-white card-shadow">
                                 <div className="menu-header text-center font-bold py-2 text-lg">目錄</div>
@@ -503,100 +403,18 @@
                                     </div>
                                 </div>
                             </div>
-                            
                             <div className="bg-white rounded-lg overflow-hidden card-shadow mt-2">
-                                <div className="p-3 flex justify-between items-center bg-[#2EA9DF] text-white font-bold text-lg">
-                                    <div className="flex items-center gap-2"><i className="fas fa-globe"></i> 網頁查詢</div>
-                                    <button onClick={() => setPanels(prev => ({...prev, webQuery: { ...prev.webQuery, collapsed: !prev.webQuery.collapsed } }))} className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.webQuery.collapsed ? 'down' : 'up'}`}></i></button>
-                                </div>
-                                {!panels.webQuery.collapsed && (
-                                    <div className="p-2 flex flex-col gap-2">
-                                        <div className="flex justify-start"><a href={links.copyright.must} target="_blank" className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3 py-1 rounded text-sm inline-flex items-center shadow transition-colors"><i className="fas fa-music mr-2"></i> 前往 MÜST 著作權協會查詢</a></div>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">{embeddedSites.map((site, index) => <WebBrowser key={index} title={site.title} url={site.url} />)}</div>
-                                    </div>
-                                )}
+                                <div className="p-3 flex justify-between items-center bg-[#2EA9DF] text-white font-bold text-lg"><div className="flex items-center gap-2"><i className="fas fa-globe"></i> 網頁查詢</div><button onClick={() => setPanels(prev => ({...prev, webQuery: { ...prev.webQuery, collapsed: !prev.webQuery.collapsed } }))} className="w-8 h-8 rounded-full hover:bg-white/20 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.webQuery.collapsed ? 'down' : 'up'}`}></i></button></div>
+                                {!panels.webQuery.collapsed && (<div className="p-2 flex flex-col gap-2"><div className="flex justify-start"><a href={links.copyright.must} target="_blank" className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3 py-1 rounded text-sm inline-flex items-center shadow transition-colors"><i className="fas fa-music mr-2"></i> 前往 MÜST 著作權協會查詢</a></div><div className="grid grid-cols-1 md:grid-cols-2 gap-2">{embeddedSites.map((site, index) => <WebBrowser key={index} title={site.title} url={site.url} />)}</div></div>)}
                             </div>
-
-                            {panels.copyright.visible && (
-                                <div className="search-panel card-shadow">
-                                    <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
-                                        <div className="flex items-center gap-2"><i className="fas fa-search text-orange-500"></i><span>版權查詢</span></div>
-                                        <div className="flex items-center gap-3"><a href={links.copyright.querySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('copyright')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.copyright.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div>
-                                    </div>
-                                    {!panels.copyright.collapsed && <div className="p-4 bg-white"><CopyrightSearchBlock hook={copyright1} label="搜尋 1" headers={copyrightHeaders} enableCopy={true} remakeColIndex={3} /><CopyrightSearchBlock hook={copyright2} label="搜尋 2" headers={copyrightHeaders} enableCopy={true} remakeColIndex={3} /><CopyrightSearchBlock hook={copyright3} label="搜尋 3" headers={copyrightHeaders} enableCopy={true} remakeColIndex={3} /></div>}
-                                </div>
-                            )}
-                            
-                            {panels.recordedQuery.visible && (
-                                <div className="search-panel card-shadow">
-                                    <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
-                                        <div className="flex items-center gap-2"><i className="fas fa-check-circle text-orange-500"></i><span>已錄曲目查詢</span></div>
-                                        <div className="flex items-center gap-3"><a href={links.others.recordedQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('recordedQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.recordedQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div>
-                                    </div>
-                                    {!panels.recordedQuery.collapsed && <SimpleSearchPanel hook={recorded} placeholder="請輸入歌名並按下搜尋" headers={recordedHeaders} enableCopy={false} remakeColIndex={8} note="可輸入關鍵字,避開台語字" />}
-                                </div>
-                            )}
-
-                            {panels.epQuery.visible && (
-                                <div className="search-panel card-shadow">
-                                    <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
-                                        <div className="flex items-center gap-2"><i className="fas fa-list-ol text-orange-500"></i><span>集數查詢</span></div>
-                                        <div className="flex items-center gap-3"><a href={links.others.epQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('epQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.epQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div>
-                                    </div>
-                                    {!panels.epQuery.collapsed && <SimpleSearchPanel hook={epQuery} placeholder="請輸入集數..." headers={epHeaders} enableCopy={true} remakeColIndex={7} />}
-                                </div>
-                            )}
-
-                            {panels.singerList.visible && (
-                                <div className="search-panel card-shadow">
-                                    <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
-                                        <div className="flex items-center gap-2"><i className="fas fa-microphone-alt text-orange-500"></i><span>歌手歌單查詢</span></div>
-                                        <div className="flex items-center gap-3"><a href={links.others.singerListSource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('singerList')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.singerList.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div>
-                                    </div>
-                                    {!panels.singerList.collapsed && <SimpleSearchPanel hook={singerList} placeholder="請輸入歌手姓名..." headers={singerListHeaders} enableCopy={false} remakeColIndex={5} extraControl={<label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-3 py-2 rounded border border-gray-300 hover:bg-gray-200 transition-colors select-none"><input type="checkbox" checked={singerExcludeSung} onChange={handleSingerCheckboxChange} className="w-4 h-4 text-orange-500 focus:ring-orange-400 cursor-pointer" /><span className="text-sm font-bold text-gray-700">排除已唱</span></label>} />}
-                                </div>
-                            )}
-
-                            {panels.singerSungQuery.visible && (
-                                <div className="search-panel card-shadow">
-                                    <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
-                                        <div className="flex items-center gap-2"><i className="fas fa-user-tag text-orange-500"></i><span>歌手已唱查詢</span></div>
-                                        <div className="flex items-center gap-3"><a href={links.others.singerSungQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('singerSungQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.singerSungQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div>
-                                    </div>
-                                    {!panels.singerSungQuery.collapsed && <SimpleSearchPanel hook={singerSung} placeholder="請輸入歌手姓名..." headers={singerSungHeaders} enableCopy={false} remakeColIndex={7} />}
-                                </div>
-                            )}
-
-                            {panels.songList.visible && (
-                                <div className="search-panel card-shadow">
-                                    <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
-                                        <div className="flex items-center gap-2"><i className="fas fa-music text-orange-500"></i><span>歌單歌名查詢</span></div>
-                                        <div className="flex items-center gap-3"><a href={links.others.singerListSource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('songList')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.songList.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div>
-                                    </div>
-                                    {!panels.songList.collapsed && <SimpleSearchPanel hook={songList} placeholder="請輸入歌名並按下搜尋" headers={singerListHeaders} enableCopy={false} remakeColIndex={5} note="可輸入關鍵字,避開台語字" extraControl={<label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-3 py-2 rounded border border-gray-300 hover:bg-gray-200 transition-colors select-none"><input type="checkbox" checked={songListExcludeSung} onChange={handleSongListCheckboxChange} className="w-4 h-4 text-orange-500 focus:ring-orange-400 cursor-pointer" /><span className="text-sm font-bold text-gray-700">排除已唱</span></label>} />}
-                                </div>
-                            )}
-
-                            {panels.origSingerQuery.visible && (
-                                <div className="search-panel card-shadow">
-                                    <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
-                                        <div className="flex items-center gap-2"><i className="fas fa-star text-orange-500"></i><span>建檔原唱查詢</span></div>
-                                        <div className="flex items-center gap-3"><a href={links.copyright.origQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('origSingerQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.origSingerQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div>
-                                    </div>
-                                    {!panels.origSingerQuery.collapsed && <SimpleSearchPanel hook={origSinger} placeholder="請輸入歌手..." headers={origSingerHeaders} enableCopy={true} remakeColIndex={1} />}
-                                </div>
-                            )}
-
-                            {panels.haojiQuery.visible && (
-                                <div className="search-panel card-shadow">
-                                    <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
-                                        <div className="flex items-center gap-2"><i className="fas fa-compact-disc text-orange-500"></i><span>豪記查詢</span></div>
-                                        <div className="flex items-center gap-3"><a href={links.others.haojiQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('haojiQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.haojiQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div>
-                                    </div>
-                                    {!panels.haojiQuery.collapsed && <SimpleSearchPanel hook={haoji} placeholder="請輸入歌名..." headers={haojiHeaders} enableCopy={false} remakeColIndex={-1} />}
-                                </div>
-                            )}
-
+                            {panels.copyright.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-search text-orange-500"></i><span>版權查詢</span></div><div className="flex items-center gap-3"><a href={links.copyright.querySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('copyright')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.copyright.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.copyright.collapsed && <div className="p-4 bg-white"><CopyrightSearchBlock hook={copyright1} label="搜尋 1" headers={copyrightHeaders} enableCopy={true} remakeColIndex={3} mpaColIndex={4} /><CopyrightSearchBlock hook={copyright2} label="搜尋 2" headers={copyrightHeaders} enableCopy={true} remakeColIndex={3} mpaColIndex={4} /><CopyrightSearchBlock hook={copyright3} label="搜尋 3" headers={copyrightHeaders} enableCopy={true} remakeColIndex={3} mpaColIndex={4} /></div>}</div>}
+                            {panels.recordedQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-check-circle text-orange-500"></i><span>已錄曲目查詢</span></div><div className="flex items-center gap-3"><a href={links.others.recordedQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('recordedQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.recordedQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.recordedQuery.collapsed && <SimpleSearchPanel hook={recorded} placeholder="請輸入歌名並按下搜尋" headers={recordedHeaders} enableCopy={false} remakeColIndex={8} mpaColIndex={9} note="可輸入關鍵字,避開台語字" />}</div>}
+                            {panels.epQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-list-ol text-orange-500"></i><span>集數查詢</span></div><div className="flex items-center gap-3"><a href={links.others.epQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('epQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.epQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.epQuery.collapsed && <SimpleSearchPanel hook={epQuery} placeholder="請輸入集數..." headers={epHeaders} enableCopy={true} remakeColIndex={7} mpaColIndex={8} />}</div>}
+                            {panels.singerList.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-microphone-alt text-orange-500"></i><span>歌手歌單查詢</span></div><div className="flex items-center gap-3"><a href={links.others.singerListSource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('singerList')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.singerList.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.singerList.collapsed && <SimpleSearchPanel hook={singerList} placeholder="請輸入歌手姓名..." headers={singerListHeaders} enableCopy={false} remakeColIndex={5} mpaColIndex={6} extraControl={<label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-3 py-2 rounded border border-gray-300 hover:bg-gray-200 transition-colors select-none"><input type="checkbox" checked={singerExcludeSung} onChange={handleSingerCheckboxChange} className="w-4 h-4 text-orange-500 focus:ring-orange-400 cursor-pointer" /><span className="text-sm font-bold text-gray-700">排除已唱</span></label>} />}</div>}
+                            {panels.singerSungQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-user-tag text-orange-500"></i><span>歌手已唱查詢</span></div><div className="flex items-center gap-3"><a href={links.others.singerSungQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('singerSungQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.singerSungQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.singerSungQuery.collapsed && <SimpleSearchPanel hook={singerSung} placeholder="請輸入歌手姓名..." headers={singerSungHeaders} enableCopy={false} remakeColIndex={7} mpaColIndex={8} />}</div>}
+                            {panels.songList.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-music text-orange-500"></i><span>歌單歌名查詢</span></div><div className="flex items-center gap-3"><a href={links.others.singerListSource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('songList')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.songList.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.songList.collapsed && <SimpleSearchPanel hook={songList} placeholder="請輸入歌名並按下搜尋" headers={singerListHeaders} enableCopy={false} remakeColIndex={5} mpaColIndex={6} note="可輸入關鍵字,避開台語字" extraControl={<label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-3 py-2 rounded border border-gray-300 hover:bg-gray-200 transition-colors select-none"><input type="checkbox" checked={songListExcludeSung} onChange={handleSongListCheckboxChange} className="w-4 h-4 text-orange-500 focus:ring-orange-400 cursor-pointer" /><span className="text-sm font-bold text-gray-700">排除已唱</span></label>} />}</div>}
+                            {panels.origSingerQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-star text-orange-500"></i><span>建檔原唱查詢</span></div><div className="flex items-center gap-3"><a href={links.copyright.querySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('origSingerQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.origSingerQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.origSingerQuery.collapsed && <SimpleSearchPanel hook={origSinger} placeholder="請輸入歌手..." headers={origSingerHeaders} enableCopy={true} remakeColIndex={1} mpaColIndex={2} />}</div>}
+                            {panels.haojiQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-compact-disc text-orange-500"></i><span>豪記查詢</span></div><div className="flex items-center gap-3"><a href={links.others.haojiQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('haojiQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.haojiQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.haojiQuery.collapsed && <SimpleSearchPanel hook={haoji} placeholder="請輸入歌名..." headers={haojiHeaders} enableCopy={false} remakeColIndex={-1} mpaColIndex={-1} />}</div>}
                         </div>
                     </div>
                 </div>
