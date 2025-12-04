@@ -26,7 +26,7 @@
         .search-panel { background-color: #FFFFFF; border: 2px solid #2EA9DF; border-radius: 8px; overflow: hidden; margin-top: 10px; transition: all 0.3s ease; }
         .search-header { background-color: #E6F4F1; color: #2D3436; font-weight: bold; }
         
-        /* 表格樣式 */
+        /* 表格樣式：固定寬度 + 滑鼠懸停顯示 */
         .result-table { table-layout: fixed; width: 100%; }
         .result-table th { 
             background-color: #E2E8F0; color: #2D3436; font-size: 0.8rem; 
@@ -57,27 +57,28 @@
         const { useState, useEffect } = React;
 
         // ==========================================
-        // 1. 標題定義
+        // 1. 標題定義 (已移除 "串"，並調整寬度)
         // ==========================================
         const copyrightHeaders = [
-            {render:()=><span>次數<span className="header-small">(無除夕)</span></span>, width:"50px"},
-            {render:()=><span>唱過<span className="header-small">(無45轉)</span></span>, width:"70px"},
+            {render:()=><span>次數<span className="header-small">(無除夕)</span></span>, width:"50px"}, // 5個半形
+            {render:()=><span>唱過<span className="header-small">(無45轉)</span></span>, width:"70px"}, // 比照詞重權
+            // "串" 已移除
             {render:"歌名", width:"150px"},
-            {render:"重製", width:"55px"},
-            {render:"MPA", width:"55px"},
+            {render:"重製", width:"55px"}, // 4個半形+
+            {render:"MPA", width:"55px"},  // 4個半形+
             {render:"首句歌詞", width:"160px"},
-            {render:"原唱人", width:"70px"},
-            {render:"連結", width:"60px"},
+            {render:"原唱人", width:"70px"}, // 比照詞重權
+            {render:"連結", width:"60px"},   // 符號+LINK
             {render:"特殊備註", width:"120px"},
-            {render:"作詞人", width:"70px"},
-            {render:()=><span>詞<br/>公權</span>, width:"55px"},
-            {render:"詞重權", width:"70px"},
-            {render:()=><span>詞<br/>百分比</span>, width:"55px"},
-            {render:"作曲人", width:"70px"},
-            {render:"曲公權", width:"55px"},
-            {render:"曲重權", width:"70px"},
-            {render:()=><span>曲<br/>百分比</span>, width:"55px"},
-            {render:"編曲", width:"70px"}
+            {render:"作詞人", width:"70px"}, // 比照詞重權
+            {render:()=><span>詞<br/>公權</span>, width:"55px"}, // 4個半形+
+            {render:"詞重權", width:"70px"}, // 6個半形
+            {render:()=><span>詞<br/>百分比</span>, width:"55px"}, // 4個半形+
+            {render:"作曲人", width:"70px"}, // 比照詞重權
+            {render:"曲公權", width:"55px"}, // 4個半形+
+            {render:"曲重權", width:"70px"}, // 6個半形
+            {render:()=><span>曲<br/>百分比</span>, width:"55px"}, // 4個半形+
+            {render:"編曲", width:"70px"} // 比照詞重權
         ];
 
         const singerListHeaders = [
@@ -110,6 +111,7 @@
             {title:"特殊備註", width:"100px"}
         ];
 
+        // 已錄曲目：也將相關欄位同步調整寬度以保持一致
         const recordedHeaders = [
             {title:"集數", width:"50px"},
             {title:"播出日期", width:"80px"},
@@ -155,8 +157,8 @@
             {title:"位置", width:"80px"},
             {title:"歌名", width:"150px"},
             {title:"原唱人", width:"90px"},
-            {title:"作詞人", width:"90px"},
-            {title:"作曲人", width:"90px"},
+            {title:"作詞人", width:"80px"},
+            {title:"作曲人", width:"80px"},
             {title:"版權資訊", width:"140px"},
             {title:"首句歌詞", width:"160px"},
             {title:"備註", width:"100px"}
@@ -170,7 +172,7 @@
             others: { singerListSource: "https://docs.google.com/spreadsheets/d/1mt4dVA3_VmqzyKjf0jbmYQMzJl0sef4G2hcqve7KDQ0/edit?gid=530920512#gid=530920512", epQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=622192856#gid=622192856", recordedQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1872621493#gid=1872621493", singerSungQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=399230212#gid=399230212", haojiQuerySource: "https://docs.google.com/spreadsheets/d/1BiIWEn1Yh22nOZM_z-HFyNryX_AsjmjnH366VUDRuPg/edit?gid=829761523#gid=829761523", haojiQuery: "#" }
         };
 
-        // 3. 子元件：版權查詢區塊 (修正：無資料時不顯示表格)
+        // 3. 子元件：版權查詢區塊
         const CopyrightSearchBlock = ({ hook, label }) => (
             <div className="mb-4 border-b border-gray-200 pb-4 last:border-0 last:pb-0">
                 <div className="font-bold text-gray-500 text-sm mb-2">{label}</div>
@@ -187,9 +189,7 @@
                     </button>
                 </form>
                 {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
-                
-                {/* 顯示邏輯修正 */}
-                {hook.results && hook.results.length > 0 ? (
+                {hook.results && (
                     <div className="overflow-x-auto border border-gray-200 rounded">
                         <table className="result-table text-left border-collapse">
                             <thead>
@@ -200,7 +200,9 @@
                             <tbody>
                                 {hook.results.map((row,ri)=>(
                                     <tr key={ri}>
+                                        {/* 過濾掉 Index 2 (串) */}
                                         {row.filter((_, idx) => idx !== 2).map((c,ci) => (
+                                            // 移除串後，原本 Index 8 (Link) 變成 Index 7
                                             <td key={ci} title={typeof c === 'string' ? c : ''}>
                                                 {ci===7 ? <a href={c} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>Link</a> : c}
                                             </td>
@@ -210,15 +212,13 @@
                             </tbody>
                         </table>
                     </div>
-                ) : hook.results && hook.results.length === 0 ? (
-                    <div className="text-center text-gray-500 py-4 font-bold">"{hook.term}" 查無資料</div>
-                ) : !hook.loading && (
-                    <div className="text-gray-400 text-xs">請輸入關鍵字並按下查詢</div>
                 )}
+                {!hook.results && !hook.loading && <div className="text-gray-400 text-xs">請輸入關鍵字並按下查詢</div>}
             </div>
         );
 
         const App = () => {
+            // API 設定
             const API_URL = "https://script.google.com/macros/s/AKfycbzF7XVJK-rIoHBIQvEVF1c4AJJNR4x5f-wkqAaWwCLb9yMflTE3_c9MSEzwwglQQFTwYw/exec";
             
             const [sheetData, setSheetData] = useState(null);
@@ -250,6 +250,7 @@
                 return val;
             };
 
+            // 撫慰金格式化：如果是空值則顯示 0
             const formatBonus = (val) => {
                 if (val === "" || val === null || val === undefined) return "0";
                 return val;
@@ -459,7 +460,7 @@
                                 </div>
                             </div>
 
-                            {/* 1. 版權查詢 */}
+                            {/* 1. 版權查詢 (3 個獨立區塊) */}
                             {panels.copyright.visible && (
                                 <div className="search-panel card-shadow">
                                     <div className="search-header p-3 flex justify-between items-center border-b border-gray-200">
@@ -496,14 +497,14 @@
                                                 <button type="submit" disabled={recorded.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2 rounded shadow transition-colors">{recorded.loading?'...':'查詢'}</button>
                                             </form>
                                             {recorded.error && <div className="text-red-500 text-sm mb-2">{recorded.error}</div>}
-                                            {recorded.results && recorded.results.length > 0 ? (
+                                            {recorded.results ? (
                                                 <div className="overflow-x-auto border border-gray-200 rounded">
                                                     <table className="result-table text-left border-collapse">
                                                         <thead><tr>{recordedHeaders.map((h,i)=><th key={i} style={{width: h.width}}>{h.title}</th>)}</tr></thead>
                                                         <tbody>{recorded.results.map((row,ri)=><tr key={ri}>{row.map((c,ci)=><td key={ci} title={typeof c === 'string' ? c : ''}>{ci===11&&c?<a href={c} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>Link</a>:c}</td>)}</tr>)}</tbody>
                                                     </table>
                                                 </div>
-                                            ) : recorded.results && recorded.results.length === 0 ? <div className="text-center text-gray-500 py-4 font-bold">"{recorded.term}" 查無資料</div> : !recorded.loading && <div className="text-center text-gray-400 py-8 text-sm">請於上方輸入歌名並按下查詢</div>}
+                                            ) : <div className="text-center text-gray-400 py-8 text-sm">{recorded.loading?'搜尋中...':'請於上方輸入歌名並按下查詢'}</div>}
                                         </div>
                                     )}
                                 </div>
@@ -527,14 +528,14 @@
                                                 <button type="submit" disabled={singerList.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2 rounded shadow transition-colors">{singerList.loading?'...':'查詢'}</button>
                                             </form>
                                             {singerList.error && <div className="text-red-500 text-sm mb-2">{singerList.error}</div>}
-                                            {singerList.results && singerList.results.length > 0 ? (
+                                            {singerList.results ? (
                                                 <div className="overflow-x-auto border border-gray-200 rounded">
                                                     <table className="result-table text-left border-collapse">
                                                         <thead><tr>{singerListHeaders.map((h,i)=><th key={i} style={{width: h.width}}>{h.title}</th>)}</tr></thead>
                                                         <tbody>{singerList.results.map((row,ri)=><tr key={ri}>{row.map((c,ci)=><td key={ci} title={typeof c === 'string' ? c : ''}>{ci===9&&c?<a href={c} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>Link</a>:c}</td>)}</tr>)}</tbody>
                                                     </table>
                                                 </div>
-                                            ) : singerList.results && singerList.results.length === 0 ? <div className="text-center text-gray-500 py-4 font-bold">"{singerList.term}" 查無資料</div> : !singerList.loading && <div className="text-center text-gray-400 py-8 text-sm">請於上方輸入歌手姓名並按下查詢</div>}
+                                            ) : <div className="text-center text-gray-400 py-8 text-sm">{singerList.loading?'搜尋中...':'請於上方輸入歌手姓名並按下查詢'}</div>}
                                         </div>
                                     )}
                                 </div>
@@ -557,14 +558,14 @@
                                                 <button type="submit" disabled={singerSung.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2 rounded shadow transition-colors">{singerSung.loading?'...':'查詢'}</button>
                                             </form>
                                             {singerSung.error && <div className="text-red-500 text-sm mb-2">{singerSung.error}</div>}
-                                            {singerSung.results && singerSung.results.length > 0 ? (
+                                            {singerSung.results ? (
                                                 <div className="overflow-x-auto border border-gray-200 rounded">
                                                     <table className="result-table text-left border-collapse">
                                                         <thead><tr>{singerSungHeaders.map((h,i)=><th key={i} style={{width: h.width}}>{h.title}</th>)}</tr></thead>
                                                         <tbody>{singerSung.results.map((row,ri)=><tr key={ri}>{row.map((c,ci)=><td key={ci} title={typeof c === 'string' ? c : ''}>{ci===11&&c?<a href={c} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>Link</a>:c}</td>)}</tr>)}</tbody>
                                                     </table>
                                                 </div>
-                                            ) : singerSung.results && singerSung.results.length === 0 ? <div className="text-center text-gray-500 py-4 font-bold">"{singerSung.term}" 查無資料</div> : !singerSung.loading && <div className="text-center text-gray-400 py-8 text-sm">請於上方輸入歌手姓名並按下查詢</div>}
+                                            ) : <div className="text-center text-gray-400 py-8 text-sm">{singerSung.loading?'搜尋中...':'請於上方輸入歌手姓名並按下查詢'}</div>}
                                         </div>
                                     )}
                                 </div>
@@ -587,14 +588,14 @@
                                                 <button type="submit" disabled={epQuery.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2 rounded shadow transition-colors">{epQuery.loading?'...':'查詢'}</button>
                                             </form>
                                             {epQuery.error && <div className="text-red-500 text-sm mb-2">{epQuery.error}</div>}
-                                            {epQuery.results && epQuery.results.length > 0 ? (
+                                            {epQuery.results ? (
                                                 <div className="overflow-x-auto border border-gray-200 rounded">
                                                     <table className="result-table text-left border-collapse">
                                                         <thead><tr>{epHeaders.map((h,i)=><th key={i} style={{width: h.width}}>{h.title}</th>)}</tr></thead>
                                                         <tbody>{epQuery.results.map((row,ri)=><tr key={ri}>{row.map((c,ci)=><td key={ci} title={typeof c === 'string' ? c : ''}>{ci===11&&c?<a href={c} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>Link</a>:c}</td>)}</tr>)}</tbody>
                                                     </table>
                                                 </div>
-                                            ) : epQuery.results && epQuery.results.length === 0 ? <div className="text-center text-gray-500 py-4 font-bold">"{epQuery.term}" 查無資料</div> : !epQuery.loading && <div className="text-center text-gray-400 py-8 text-sm">請於上方輸入集數並按下查詢</div>}
+                                            ) : <div className="text-center text-gray-400 py-8 text-sm">{epQuery.loading?'搜尋中...':'請於上方輸入集數並按下查詢'}</div>}
                                         </div>
                                     )}
                                 </div>
@@ -617,14 +618,14 @@
                                                 <button type="submit" disabled={haoji.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2 rounded shadow transition-colors">{haoji.loading?'...':'查詢'}</button>
                                             </form>
                                             {haoji.error && <div className="text-red-500 text-sm mb-2">{haoji.error}</div>}
-                                            {haoji.results && haoji.results.length > 0 ? (
+                                            {haoji.results ? (
                                                 <div className="overflow-x-auto border border-gray-200 rounded">
                                                     <table className="result-table text-left border-collapse">
                                                         <thead><tr>{haojiHeaders.map((h,i)=><th key={i} style={{width: h.width}}>{h.title}</th>)}</tr></thead>
                                                         <tbody>{haoji.results.map((row,ri)=><tr key={ri}>{row.map((c,ci)=><td key={ci} title={typeof c === 'string' ? c : ''}>{c}</td>)}</tr>)}</tbody>
                                                     </table>
                                                 </div>
-                                            ) : haoji.results && haoji.results.length === 0 ? <div className="text-center text-gray-500 py-4 font-bold">"{haoji.term}" 查無資料</div> : !haoji.loading && <div className="text-center text-gray-400 py-8 text-sm">請於上方輸入歌名並按下查詢</div>}
+                                            ) : <div className="text-center text-gray-400 py-8 text-sm">{haoji.loading?'搜尋中...':'請於上方輸入歌名並按下查詢'}</div>}
                                         </div>
                                     )}
                                 </div>
