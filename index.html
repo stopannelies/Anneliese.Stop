@@ -157,10 +157,8 @@
                                         {copyMode && enableRowSelection && (<td className="text-center border-r border-gray-200"><input type="checkbox" checked={selectedRows.has(ri)} onChange={() => toggleRow(ri)} className="cursor-pointer w-4 h-4" /></td>)}
                                         {row.map((c, ci) => { 
                                             if (copyMode && hiddenColumnsInCopy && hiddenColumnsInCopy.includes(ci)) return null; 
-                                            
                                             // 資料解析: 如果是物件 {t, p}，顯示 t，否則顯示 c
                                             const displayContent = (c && typeof c === 'object' && c.t) ? c.t : c;
-                                            
                                             let styleClass = "";
                                             if (ci === remakeColIndex) styleClass = getRemakeStyle(c); 
                                             if (ci === mpaColIndex) styleClass = getMPAStyle(c);
@@ -189,8 +187,10 @@
         
         // 特殊查詢標題 (移除演唱者、錄影日期、單元等不必要的欄位)
         const specialHeaders = [{title:"次數",width:"50px"},{title:"歌名",width:"150px"},{title:"組曲",width:"40px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
-        // 修正：移除重複的錄影日期
+        
+        // 修改處：移除了第二個錄影日期
         const recordedHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"歌名",width:"150px"},{title:"演唱者",width:"70px"},{title:"組曲",width:"40px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
+        
         const singerListHeaders = [{title:"唱過",width:"50px"},{title:"日期",width:"80px"},{title:"歌手",width:"70px"},{title:"歌名",width:"150px"},{title:"原唱",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"180px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"}];
         const epHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"70px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"100px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
         const singerSungHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"100px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"90px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"60px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"120px"}];
@@ -212,7 +212,12 @@
                 </form>
                 <div className="text-gray-400 text-xs mb-2">可輸入關鍵字,避開台語字</div>
                 {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
-                {hook.results ? (hook.results.length > 0 ? <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} enableRowSelection={true} hiddenColumnsInCopy={[0, 1]} defaultColumnSelection='all' /> : <div className="text-gray-500 font-bold mt-2 text-center py-4 bg-gray-50 rounded">'{hook.term}' 查無資料</div>) : null}
+                {/* 修改處：判斷是否有結果，若無結果則顯示查無資料 */}
+                {hook.results && (hook.results.length > 0 ? (
+                    <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} enableRowSelection={true} hiddenColumnsInCopy={[0, 1]} defaultColumnSelection='all' />
+                ) : (
+                    <div className="text-center p-4 text-gray-500 font-bold">'{hook.term}' 查無資料</div>
+                ))}
             </div>
         );
         const SimpleSearchPanel = ({ hook, placeholder, headers, enableCopy, remakeColIndex, mpaColIndex, medleyColIndex, note, extraControl, enableRowSelection, hiddenColumnsInCopy, defaultColumnSelection }) => (
@@ -224,7 +229,12 @@
                 </form>
                 {note && <div className="text-gray-400 text-xs mb-2">{note}</div>}
                 {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
-                {hook.results ? (hook.results.length > 0 ? <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} medleyColIndex={medleyColIndex} enableRowSelection={enableRowSelection} hiddenColumnsInCopy={hiddenColumnsInCopy} defaultColumnSelection={defaultColumnSelection} /> : <div className="text-gray-500 font-bold mt-2 text-center py-4 bg-gray-50 rounded">'{hook.term}' 查無資料</div>) : null}
+                {/* 修改處：判斷是否有結果，若無結果則顯示查無資料 */}
+                {hook.results && (hook.results.length > 0 ? (
+                    <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} medleyColIndex={medleyColIndex} enableRowSelection={enableRowSelection} hiddenColumnsInCopy={hiddenColumnsInCopy} defaultColumnSelection={defaultColumnSelection} />
+                ) : (
+                    <div className="text-center p-4 text-gray-500 font-bold">'{hook.term}' 查無資料</div>
+                ))}
             </div>
         );
         const SpecialSearchPanel = ({ hook, headers, enableCopy, remakeColIndex, mpaColIndex }) => (
@@ -233,7 +243,12 @@
                     <button onClick={() => hook.search("45轉")} disabled={hook.loading} className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-6 py-2 rounded shadow transition-colors">{hook.loading ? '...' : '45轉'}</button>
                 </div>
                 {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
-                {hook.results ? (hook.results.length > 0 ? <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} /> : <div className="text-gray-500 font-bold mt-2 text-center py-4 bg-gray-50 rounded">'45轉' 查無資料</div>) : null}
+                {/* 修改處：判斷是否有結果，若無結果則顯示查無資料 */}
+                {hook.results && (hook.results.length > 0 ? (
+                    <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} />
+                ) : (
+                    <div className="text-center p-4 text-gray-500 font-bold">'{hook.term || "45轉"}' 查無資料</div>
+                ))}
             </div>
         );
         const WebBrowser = ({ title, url, scale = 1 }) => {
