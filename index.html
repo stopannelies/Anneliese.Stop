@@ -92,7 +92,7 @@
             return str;
         };
 
-        const ResultTable = ({ headers, data, enableCopy, remakeColIndex, mpaColIndex, medleyColIndex, enableRowSelection, hiddenColumnsInCopy, defaultColumnSelection, expandedRowRender, autoWidth }) => {
+        const ResultTable = ({ headers, data, enableCopy, remakeColIndex, mpaColIndex, medleyColIndex, enableRowSelection, hiddenColumnsInCopy, defaultColumnSelection, expandedRowRender, autoWidth, exactWidth }) => {
             const [copyMode, setCopyMode] = useState(false);
             const [selectedCols, setSelectedCols] = useState([]);
             const [selectedRows, setSelectedRows] = useState(new Set());
@@ -140,6 +140,17 @@
             const selectAllCols = () => setSelectedCols(headers.map((_, i) => i).filter(i => !(hiddenColumnsInCopy || []).includes(i)));
             const selectNoCols = () => setSelectedCols([]);
             
+            const getTableWidthStyle = () => {
+                if (exactWidth) {
+                    let w = headers.reduce((sum, h) => sum + (parseInt(h.width) || 100), 0);
+                    if (expandedRowRender) w += 32;
+                    if (copyMode && enableRowSelection) w += 40;
+                    return { width: w + 'px' };
+                }
+                if (autoWidth) return { width: 'max-content' };
+                return {};
+            };
+            
             const displayData = getFilteredData();
 
             const handleCellClick = (e, cellData, isLink) => {
@@ -163,7 +174,7 @@
                         </div>
                     )}
                     <div className="overflow-x-auto border border-gray-200 rounded">
-                        <table className="result-table text-left border-collapse" style={autoWidth ? { width: 'max-content' } : {}}>
+                        <table className="result-table text-left border-collapse" style={getTableWidthStyle()}>
                             <thead>
                                 {copyMode && (<tr className="bg-gray-50 border-b border-gray-200">{expandedRowRender && <th className="w-8"></th>}{enableRowSelection && <th className="w-10 p-1"></th>}{headers.map((_, i) => { if (hiddenColumnsInCopy && hiddenColumnsInCopy.includes(i)) return null;
                                 return <th key={i} style={{width: headers[i].width}} className="text-center p-1"><input type="checkbox" checked={selectedCols.includes(i)} onChange={() => toggleCol(i)} className="cursor-pointer" /></th>;
@@ -257,7 +268,7 @@
                                 <div className="bg-green-100 px-3 py-1.5 font-bold text-green-800 text-sm flex items-center gap-2 border-b border-green-200">
                                     <i className="fas fa-check-circle"></i> 已錄曲目紀錄 <span className="bg-green-600 text-white text-xs px-2 rounded-full ml-auto">{processedRecorded.length}</span>
                                 </div>
-                                <ResultTable headers={expandedRecordedHeaders} data={processedRecorded} enableCopy={false} autoWidth={true} />
+                                <ResultTable headers={expandedRecordedHeaders} data={processedRecorded} enableCopy={false} exactWidth={true} />
                             </div>
                         )}
 
@@ -288,7 +299,7 @@
                                 <div className="bg-purple-100 px-3 py-1.5 font-bold text-purple-800 text-sm flex items-center gap-2 border-b border-purple-200">
                                     <i className="fas fa-compact-disc"></i> 豪記資料 <span className="bg-purple-600 text-white text-xs px-2 rounded-full ml-auto">{originalData.haoji.length}</span>
                                 </div>
-                                <ResultTable headers={haojiHeaders} data={originalData.haoji} enableCopy={false} autoWidth={true} />
+                                <ResultTable headers={haojiHeaders} data={originalData.haoji} enableCopy={false} exactWidth={true} />
                             </div>
                         )}
 
