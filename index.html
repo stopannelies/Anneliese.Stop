@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>綜藝👍級棒 - 系統目錄</title>
+    <!-- 預先連線提升速度 -->
     <link rel="preconnect" href="https://script.google.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
@@ -24,7 +25,7 @@
         .rating-bg-light { background-color: #F3F0F9; }
         .menu-header { background-color: #2EA9DF; color: white; letter-spacing: 0.1em;}
         .menu-category { background-color: #7DB9DE; color: #FFFFFF; font-weight: bold; }
-        /* 移除外框與底色，改為無框設計 */
+        /* 無框按鈕設計 */
         .menu-link { color: #1B813E; font-weight: 500; text-decoration: none; transition: all 0.2s; padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; border: none; background: transparent; width: 100%; }
         .menu-link:hover, .menu-link.active { color: #F08300; background-color: rgba(240, 131, 0, 0.08); }
         .search-panel { background-color: #FFFFFF; border: 2px solid #2EA9DF; border-radius: 8px; overflow: hidden; margin-top: 10px; transition: all 0.3s ease; }
@@ -96,22 +97,20 @@
             return str;
         };
 
+        // ====== 表頭定義區 ======
         const copyrightHeaders = [{render:()=><span>次數<span className="header-small">(無除夕)</span></span>,width:"50px"},{render:()=><span>唱過<span className="header-small">(無45轉)</span></span>,width:"70px"},{render:"歌名",width:"150px"},{render:"重製",width:"55px"},{render:"MPA",width:"55px"},{render:"首句歌詞",width:"160px"},{render:"原唱人",width:"70px"},{render:"連結",width:"60px"},{render:"特殊備註",width:"120px"},{render:"作詞人",width:"70px"},{render:()=><span>詞<br/>公權</span>,width:"55px"},{render:"詞重權",width:"70px"},{render:()=><span>詞<br/>百分比</span>,width:"55px"},{render:"作曲人",width:"70px"},{render:"曲公權",width:"55px"},{render:"曲重權",width:"70px"},{render:()=><span>曲<br/>百分比</span>,width:"55px"},{render:"編曲",width:"70px"}];
         const origSingerHeaders = [{render:"歌名",width:"150px"},{render:"重製",width:"55px"},{render:"MPA",width:"55px"},{render:"首句歌詞",width:"160px"},{render:"原唱人",width:"70px"},{render:"連結",width:"60px"},{render:"特殊備註",width:"120px"},{render:"作詞人",width:"70px"},{render:()=><span>詞<br/>公權</span>,width:"55px"},{render:"詞重權",width:"70px"},{render:()=><span>詞<br/>百分比</span>,width:"55px"},{render:"作曲人",width:"70px"},{render:"曲公權",width:"55px"},{render:"曲重權",width:"70px"},{render:()=><span>曲<br/>百分比</span>,width:"55px"},{render:"編曲",width:"70px"}];
         const specialHeaders = [{title:"次數",width:"50px"},{title:"歌名",width:"150px"},{title:"組曲",width:"40px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
-        const recordedHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"歌名",width:"150px"},{title:"演唱者",width:"90px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"全集",width:"60px"},{title:"分段",width:"60px"},{title:"純享",width:"60px"}];
-        const singerListHeaders = [{title:"唱過",width:"50px"},{title:"日期",width:"80px"},{title:"歌手",width:"70px"},{title:"歌名",width:"150px"},{title:"原唱",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"180px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"}];
+        
+        // 已錄曲目包含全集、分段、純享
         const epHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"90px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"全集",width:"60px"},{title:"分段",width:"60px"},{title:"純享",width:"60px"}];
+        const expandedRecordedHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"歌名",width:"150px"},{title:"演唱者",width:"90px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"全集",width:"60px"},{title:"分段",width:"60px"},{title:"純享",width:"60px"}];
+        const expandedSingerListHeaders = [{title:"開過未唱過",width:"150px"}];
+        
         const singerSungHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"100px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"90px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"60px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"120px"}];
         const haojiHeaders = [{title:"位置",width:"80px"},{title:"歌名",width:"150px"},{title:"原唱人",width:"90px"},{title:"作詞人",width:"90px"},{title:"作曲人",width:"90px"},{title:"版權資訊",width:"140px"},{title:"首句歌詞",width:"160px"},{title:"備註",width:"100px"}];
 
-        const expandedRecordedHeaders = [
-            { title: "集數", width: "50px" }, { title: "播出日期", width: "90px" }, { title: "單元", width: "150px" }, { title: "歌名", width: "150px" }, { title: "演唱者", width: "90px" }, { title: "組曲", width: "50px" }, { title: "錄影日期", width: "90px" }, { title: "全集", width: "60px" }, { title: "分段", width: "60px" }, { title: "純享", width: "60px" }
-        ];
-        const expandedSingerListHeaders = [
-            { title: "開過未唱過", width: "150px" }
-        ];
-
+        // ====== 基礎表格組件 ======
         const ResultTable = ({ headers, data, enableCopy, remakeColIndex, mpaColIndex, medleyColIndex, enableRowSelection, hiddenColumnsInCopy, defaultColumnSelection, exactWidth = false }) => {
             const [copyMode, setCopyMode] = useState(false);
             const [selectedCols, setSelectedCols] = useState([]);
@@ -214,13 +213,13 @@
             );
         };
 
+        // ====== 綜合展開列 ======
         const UnifiedExpandedRow = ({ item, headers }) => {
             const [expanded, setExpanded] = useState(false);
             const [popup, setPopup] = useState(null);
 
             const hasRecorded = item.recorded && item.recorded.length > 0;
             const hasSongList = item.songList && item.songList.length > 0;
-            // 由於 haoji 已經被獨立出來，我們不再從 unified 中顯示它
             const hasRelated = hasRecorded || hasSongList;
 
             const toggleExpand = () => {
@@ -238,18 +237,16 @@
 
             useEffect(() => { const closePopup = () => setPopup(null); if (popup) document.addEventListener('click', closePopup); return () => document.removeEventListener('click', closePopup); }, [popup]);
 
-            const row = item.copyright[0];
-            
+            const row = item.copyright[0]; // array size 18
             const stickyCol1 = "sticky left-0 bg-white group-hover:bg-yellow-50 z-10 shadow-[1px_0_0_#E2E8F0]";
-            const stickyCol2 = "sticky left-[40px] bg-white group-hover:bg-yellow-50 z-10 shadow-[1px_0_0_#E2E8F0]";
 
-            // 處理歌手開過歌單（抓未唱過的歌手）
             let uniqueUnsungSingers = [];
             if (hasSongList) {
                 const singers = item.songList.filter(r => !r[0] || r[0].toString().trim() === "").map(r => r[2]);
                 uniqueUnsungSingers = [...new Set(singers)];
             }
-            const songListData = uniqueUnsungSingers.length > 0 ? [[uniqueUnsungSingers.join(' . ')]] : [];
+            // 只要系統有搜尋到歌單，框框一定會顯示。沒人符合未唱過則顯示「無 (皆已唱)」
+            const songListData = hasSongList ? [[uniqueUnsungSingers.length > 0 ? uniqueUnsungSingers.join(' . ') : "無 (皆已唱)"]] : [];
 
             return (
                 <React.Fragment>
@@ -257,19 +254,13 @@
                         <td className={`text-center ${stickyCol1} ${hasRelated ? 'cursor-pointer' : ''}`} onClick={toggleExpand}>
                             {hasRelated ? <i className={`fas fa-chevron-${expanded ? 'up' : 'down'} text-orange-500`}></i> : null}
                         </td>
-                        <td className={stickyCol2}>
-                            {row[2]}
-                        </td>
-                        <td className="text-center">{row[0]}</td>
-                        <td className="text-center">{row[1]}</td>
-                        {row.slice(3).map((c, ci) => {
-                            const actualIndex = ci + 3;
+                        {row.slice(0, 18).map((c, ci) => {
                             let styleClass = "";
-                            if (actualIndex === 3) styleClass = getRemakeStyle(c);
-                            if (actualIndex === 4) styleClass = getMPAStyle(c);
+                            if (ci === 3) styleClass = getRemakeStyle(c);
+                            if (ci === 4) styleClass = getMPAStyle(c);
                             const isLink = (typeof c === 'string' && c.startsWith('http'));
                             return (
-                                <td key={actualIndex} className={`${styleClass} cursor-pointer`} onClick={(e) => { e.stopPropagation(); handleCellClick(e, c, isLink); }}>
+                                <td key={ci} className={`${styleClass} cursor-pointer hover:bg-yellow-50 transition-colors truncate`} onClick={(e) => { e.stopPropagation(); handleCellClick(e, c, isLink); }}>
                                     {isLink ? <a href={c} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>Link</a> : c}
                                 </td>
                             );
@@ -293,10 +284,10 @@
                                             </div>
                                         )}
                                         
-                                        {songListData.length > 0 && (
+                                        {hasSongList && (
                                             <div className="w-max">
                                                 <div className="text-xs font-bold text-gray-500 mb-1 flex items-center bg-[#2EA9DF] text-white px-2 py-0.5 rounded-t w-max">
-                                                    <i className="fas fa-microphone-alt mr-1"></i> 歌單紀錄
+                                                    <i className="fas fa-microphone-alt mr-1"></i> 開過未唱過
                                                 </div>
                                                 <div className="bg-white rounded-b border border-[#2EA9DF] overflow-hidden w-max shadow-sm">
                                                     <ResultTable headers={expandedSingerListHeaders} data={songListData} enableCopy={false} exactWidth={true} />
@@ -313,6 +304,38 @@
             );
         };
 
+        const SimpleSearchPanel = ({ hook, placeholder, headers, enableCopy, remakeColIndex, mpaColIndex, medleyColIndex, note, extraControl, enableRowSelection, hiddenColumnsInCopy, defaultColumnSelection }) => (
+            <div className="p-4 bg-white">
+                <form onSubmit={(e)=>{e.preventDefault();hook.search(hook.term)}} className="flex gap-2 mb-1 items-center">
+                    <input type="text" value={hook.term} onChange={(e)=>hook.setTerm(e.target.value)} placeholder={placeholder} className="flex-1 border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-400 transition-colors" />
+                    {extraControl}
+                    <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">{hook.loading?'...':'查詢'}</button>
+                </form>
+                {note && <div className="text-gray-400 text-xs mb-2">{note}</div>}
+                {hook.error && <div className="text-red-500 text-sm mb-2"><i className="fas fa-exclamation-triangle mr-1"></i>{hook.error}</div>}
+                {hook.results && (hook.results.length > 0 ? (
+                    <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} medleyColIndex={medleyColIndex} enableRowSelection={enableRowSelection} hiddenColumnsInCopy={hiddenColumnsInCopy} defaultColumnSelection={defaultColumnSelection} exactWidth={false} />
+                ) : (
+                    <div className="text-center p-4 text-gray-500 font-bold">'{hook.term}' 查無資料</div>
+                ))}
+            </div>
+        );
+
+        const SpecialSearchPanel = ({ hook, headers, enableCopy, remakeColIndex, mpaColIndex }) => (
+            <div className="p-4 bg-white">
+                <div className="flex gap-2 mb-4">
+                    <button onClick={() => hook.search("45轉")} disabled={hook.loading} className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-6 py-2 rounded shadow transition-colors">{hook.loading ? '...' : '45轉'}</button>
+                </div>
+                {hook.error && <div className="text-red-500 text-sm mb-2"><i className="fas fa-exclamation-triangle mr-1"></i>{hook.error}</div>}
+                {hook.results && (hook.results.length > 0 ? (
+                    <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} exactWidth={false} />
+                ) : (
+                    <div className="text-center p-4 text-gray-500 font-bold">'{hook.term || "45轉"}' 查無資料</div>
+                ))}
+            </div>
+        );
+
+        // ====== 應用程式主體 ======
         const App = () => {
             const API_URL = "https://script.google.com/macros/s/AKfycbzF7XVJK-rIoHBIQvEVF1c4AJJNR4x5f-wkqAaWwCLb9yMflTE3_c9MSEzwwglQQFTwYw/exec";
             const [sheetData, setSheetData] = useState(null);
@@ -325,7 +348,7 @@
                 download: { authPublic: "https://docs.google.com/document/d/1clnHPqpcsxw1eZromz-LdavIyeA5jUKDGxia8Tg2Bk4/export?format=docx", authRemake: "https://docs.google.com/document/d/18D2Lp3wE2C5gFXDbqT7FvNc2sZn4nTojsKDGM-rY4GE/export?format=docx", authPaidRemake: "https://drive.google.com/drive/folders/1s2EBcyseMHUNNR4kOaF8G1zdBrG5JxA3?usp=sharing" },
                 program: { schedule: "https://docs.google.com/spreadsheets/d/1WULc6ENn4a6_VolJX_1rMjKnRbNzf3SwPRr7geLXnCQ/edit?gid=580247079#gid=580247079", icebing: "https://docs.google.com/spreadsheets/u/0/d/1lQcpINzgcsEWdl-PZpUTxpiFA90KE6DnN_70xFwl8fk/edit" },
                 copyright: { member: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=1616151799#gid=1616151799", mpa: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1591903723#gid=1591903723", querySource: "https://docs.google.com/spreadsheets/d/1KxHAmz57FOu8ti8l_Zd96lrwCfO5wexPRV0jsvNaVGA/edit?gid=0#gid=0", must: "https://www.must.org.tw/tw/chinese_musical/02.aspx", origQuerySource: "https://docs.google.com/spreadsheets/d/1picJxZ8ue9DM7EHS86TdVAHdr-Qty0nd5eEMvOXCUIY/edit?gid=348730547#gid=348730547" },
-                others: { singerListSource: "https://docs.google.com/spreadsheets/d/1mt4dVA3_VmqzyKjf0jbmYQMzJl0sef4G2hcqve7KDQ0/edit?gid=530920512#gid=530920512", epQuerySource: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=0#gid=0", recordedQuerySource: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=0#gid=0", singerSungQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=399230212#gid=399230212", haojiQuerySource: "https://docs.google.com/spreadsheets/d/1BiIWEn1Yh22nOZM_z-HFyNryX_AsjmjnH366VUDRuPg/edit?gid=829761523#gid=829761523", haojiQuery: "#" }
+                others: { epQuerySource: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=0#gid=0", singerSungQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=399230212#gid=399230212", haojiQuerySource: "https://docs.google.com/spreadsheets/d/1BiIWEn1Yh22nOZM_z-HFyNryX_AsjmjnH366VUDRuPg/edit?gid=829761523#gid=829761523" }
             };
 
             useEffect(() => {
@@ -383,7 +406,7 @@
             };
             const ratingData = safeRatingData(sheetData);
 
-            const [panels, setPanels] = useState({unifiedQuery:{visible:true,collapsed:false},epQuery:{visible:false,collapsed:false},singerList:{visible:false,collapsed:false},singerSungQuery:{visible:false,collapsed:false},origSingerQuery:{visible:false,collapsed:false},haojiQuery:{visible:false,collapsed:false},specialQuery:{visible:false,collapsed:false},webQuery:{visible:true,collapsed:true}});
+            const [panels, setPanels] = useState({unifiedQuery:{visible:true,collapsed:false},epQuery:{visible:false,collapsed:false},singerSungQuery:{visible:false,collapsed:false},origSingerQuery:{visible:false,collapsed:false},haojiQuery:{visible:false,collapsed:false},specialQuery:{visible:false,collapsed:false},webQuery:{visible:true,collapsed:true}});
 
             const useSearch = (type) => {
                 const [term, setTerm] = useState("");
@@ -401,7 +424,7 @@
                             if(data.error) throw new Error(data.error);
                             setResults(data);
                         } catch(e) {
-                            throw new Error(data.error || "後端伺服器異常");
+                            throw new Error(data.error || "後端伺服器異常，讀取失敗");
                         }
                         setLoading(false);
                     })
@@ -443,12 +466,12 @@
                             sessionStorage.setItem(cacheKey, JSON.stringify(processed));
                             setResults(processed);
                         } catch(e) {
-                            throw new Error(data.error || "後端伺服器異常");
+                            throw new Error(data.error || "後端伺服器異常或資料格式錯誤");
                         }
                         setLoading(false);
                     })
                     .catch(err=>{
-                        setError(`讀取失敗 (${err.message || '無法解析回應'})`);
+                        setError(`讀取失敗 (${err.message || '請檢查網路與 Apps Script 狀態'})`);
                         setLoading(false);
                     });
                 };
@@ -460,7 +483,6 @@
                     if (data.recorded) data.recorded.forEach(r => { const k = (r[3] || "").toString().trim(); if (k) { if(!combined[k]) combined[k] = { copyright: [], recorded: [], songList: [] }; combined[k].recorded.push(r); }});
                     if (data.songList) data.songList.forEach(r => { const k = (r[3] || "").toString().trim(); if (k) { if(!combined[k]) combined[k] = { copyright: [], recorded: [], songList: [] }; combined[k].songList.push(r); }});
 
-                    // 針對只有紀錄而沒有版權資料的補齊
                     Object.values(combined).forEach(item => {
                         if (!item.copyright || item.copyright.length === 0) {
                             let fallbackTitle = "";
@@ -484,19 +506,15 @@
             };
 
             const unifiedHook = useUnifiedSearch(API_URL);
-            const singerList = useSearch('singerList');
             const epQuery = useSearch('ep');
             const singerSung = useSearch('singerSung'); 
             const haoji = useSearch('haoji'); 
             const origSinger = useSearch('origSinger');
             const special = useSearch('special');
             
-            const [singerExcludeSung, setSingerExcludeSung] = useState(false);
-            
             const togglePanelVisibility = (key) => setPanels(prev => { 
                 if(prev[key].visible){ 
                     if(key==='epQuery')epQuery.clear(); 
-                    else if(key==='singerList')singerList.clear(); 
                     else if(key==='singerSungQuery')singerSung.clear(); 
                     else if(key==='haojiQuery')haoji.clear(); 
                     else if(key==='origSingerQuery')origSinger.clear(); 
@@ -505,8 +523,6 @@
                 return {...prev,[key]:{...prev[key],visible:!prev[key].visible,collapsed:false}}; 
             });
             const togglePanelCollapse = (key) => setPanels(prev => ({...prev,[key]:{...prev[key],collapsed:!prev[key].collapsed}}));
-            
-            const handleSingerCheckboxChange = (e) => { const checked = e.target.checked; setSingerExcludeSung(checked); if(singerList.term) singerList.search(singerList.term, checked); };
             
             return (
                 <div className="max-w-[1400px] mx-auto p-3 min-h-screen">
@@ -531,7 +547,6 @@
                                         <div className="flex-1 grid grid-cols-3 gap-2 p-2 items-center pl-4">
                                             <button onClick={()=>togglePanelCollapse('unifiedQuery')} className={`menu-link text-sm text-left ${panels.unifiedQuery.visible ? 'active' : ''}`}><i className={`fas fa-layer-group mr-1 ${panels.unifiedQuery.visible ? 'text-orange-500' : 'text-gray-400'}`}></i>綜合歌名查詢</button>
                                             <button onClick={()=>togglePanelVisibility('epQuery')} className={`menu-link text-sm text-left ${panels.epQuery.visible?'active':''}`}><i className={`fas fa-list-ol mr-1 ${panels.epQuery.visible?'text-orange-500':'text-gray-400'}`}></i>集數查詢</button>
-                                            <button onClick={()=>togglePanelVisibility('singerList')} className={`menu-link text-sm text-left ${panels.singerList.visible?'active':''}`}><i className={`fas fa-microphone-alt mr-1 ${panels.singerList.visible?'text-orange-500':'text-gray-400'}`}></i>歌手歌單查詢</button>
                                             <button onClick={()=>togglePanelVisibility('singerSungQuery')} className={`menu-link text-sm text-left ${panels.singerSungQuery.visible?'active':''}`}><i className={`fas fa-user-tag mr-1 ${panels.singerSungQuery.visible?'text-orange-500':'text-gray-400'}`}></i>歌手已唱查詢</button>
                                             <button onClick={()=>togglePanelVisibility('origSingerQuery')} className={`menu-link text-sm text-left ${panels.origSingerQuery.visible?'active':''}`}><i className={`fas fa-star mr-1 ${panels.origSingerQuery.visible?'text-orange-500':'text-gray-400'}`}></i>建檔原唱查詢</button>
                                             <button onClick={()=>togglePanelVisibility('specialQuery')} className={`menu-link text-sm text-left ${panels.specialQuery.visible?'active':''}`}><i className={`fas fa-bolt mr-1 ${panels.specialQuery.visible?'text-orange-500':'text-gray-400'}`}></i>特殊查詢</button>
@@ -546,7 +561,6 @@
                                 {!panels.webQuery.collapsed && (<div className="p-2 flex flex-col gap-2"><div className="flex justify-start"><a href={links.copyright.must} target="_blank" className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3 py-1 rounded text-sm inline-flex items-center shadow transition-colors"><i className="fas fa-music mr-2"></i> 前往 MÜST 著作權協會查詢</a></div><div className="grid grid-cols-1 md:grid-cols-2 gap-2">{embeddedSites.map((site, index) => <div key={index} className="browser-frame-container card-shadow"><div className="browser-toolbar"><div className="browser-title"><i className="fas fa-globe text-blue-500"></i> {site.title}</div><div className="browser-actions"><button onClick={() => window.open(site.url, '_blank')} className="browser-btn" title="跳出"><i className="fas fa-external-link-alt"></i></button></div></div><div className="browser-content-wrapper"><iframe src={site.url} className="browser-iframe" style={{width:`${100/site.scale}%`, height:`${100/site.scale}%`, transform:`scale(${site.scale}) translate(-50%, 0)`, left: '50%', transformOrigin: 'top left'}} title={site.title} /></div></div>)}</div></div>)}
                             </div>
 
-                            {}
                             {panels.unifiedQuery.visible && (
                                 <div className="search-panel card-shadow border-2 border-orange-400">
                                     <div className="search-header p-3 flex justify-between items-center border-b border-gray-200 bg-orange-50">
@@ -575,9 +589,8 @@
                                                             <thead>
                                                                 <tr>
                                                                     <th className="w-10 text-center bg-gray-200 sticky left-0 z-20 shadow-[1px_0_0_#CBD5E0]"></th>
-                                                                    <th style={{width: "150px", minWidth: "150px", maxWidth: "150px"}} className="text-center bg-gray-200 sticky left-[40px] z-20 shadow-[1px_0_0_#CBD5E0]">歌名</th>
-                                                                    {copyrightHeaders.slice(3).map((h, i) => (
-                                                                        <th key={i+3} style={{width: h.width, minWidth: h.width, maxWidth: h.width}} className="text-center bg-gray-200">{typeof h.render === 'function' ? h.render() : (h.title || h.render)}</th>
+                                                                    {copyrightHeaders.map((h, i) => (
+                                                                        <th key={i+1} style={{width: h.width, minWidth: h.width, maxWidth: h.width}} className="text-center bg-gray-200">{typeof h.render === 'function' ? h.render() : (h.title || h.render)}</th>
                                                                     ))}
                                                                 </tr>
                                                             </thead>
@@ -600,12 +613,11 @@
                                 </div>
                             )}
 
-                            {panels.epQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-list-ol text-orange-500"></i><span>集數查詢</span></div><div className="flex items-center gap-3"><a href={links.others.epQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('epQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.epQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.epQuery.collapsed && <SimpleSearchPanel hook={epQuery} placeholder="請輸入集數..." headers={epHeaders} enableCopy={true} defaultColumnSelection="none" remakeColIndex={7} mpaColIndex={8} medleyColIndex={5} />}</div>}
-                            {panels.singerList.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-microphone-alt text-orange-500"></i><span>歌手歌單查詢</span></div><div className="flex items-center gap-3"><a href={links.others.singerListSource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('singerList')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.singerList.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.singerList.collapsed && <SimpleSearchPanel hook={singerList} placeholder="請輸入歌手姓名..." headers={singerListHeaders} enableCopy={false} remakeColIndex={5} mpaColIndex={6} extraControl={<label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-3 py-2 rounded border border-gray-300 hover:bg-gray-200 transition-colors select-none"><input type="checkbox" checked={singerExcludeSung} onChange={handleSingerCheckboxChange} className="w-4 h-4 text-orange-500 focus:ring-orange-400 cursor-pointer" /><span className="text-sm font-bold text-gray-700">排除已唱</span></label>} />}</div>}
-                            {panels.singerSungQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-user-tag text-orange-500"></i><span>歌手已唱查詢</span></div><div className="flex items-center gap-3"><a href={links.others.singerSungQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('singerSungQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.singerSungQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.singerSungQuery.collapsed && <SimpleSearchPanel hook={singerSung} placeholder="請輸入歌手姓名..." headers={singerSungHeaders} enableCopy={false} remakeColIndex={7} mpaColIndex={8} medleyColIndex={5} />}</div>}
-                            {panels.origSingerQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-star text-orange-500"></i><span>建檔原唱查詢</span></div><div className="flex items-center gap-3"><a href={links.copyright.origQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('origSingerQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.origSingerQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.origSingerQuery.collapsed && <SimpleSearchPanel hook={origSinger} placeholder="請輸入歌手..." headers={origSingerHeaders} enableCopy={true} remakeColIndex={1} mpaColIndex={2} />}</div>}
+                            {panels.epQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-list-ol text-orange-500"></i><span>集數查詢</span></div><div className="flex items-center gap-3"><a href={links.others.epQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('epQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.epQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.epQuery.collapsed && <SimpleSearchPanel hook={epQuery} placeholder="請輸入集數..." headers={epHeaders} enableCopy={true} defaultColumnSelection="none" remakeColIndex={7} mpaColIndex={8} medleyColIndex={5} exactWidth={true} />}</div>}
+                            {panels.singerSungQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-user-tag text-orange-500"></i><span>歌手已唱查詢</span></div><div className="flex items-center gap-3"><a href={links.others.singerSungQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('singerSungQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.singerSungQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.singerSungQuery.collapsed && <SimpleSearchPanel hook={singerSung} placeholder="請輸入歌手姓名..." headers={singerSungHeaders} enableCopy={false} remakeColIndex={7} mpaColIndex={8} medleyColIndex={5} exactWidth={false} />}</div>}
+                            {panels.origSingerQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-star text-orange-500"></i><span>建檔原唱查詢</span></div><div className="flex items-center gap-3"><a href={links.copyright.origQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('origSingerQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.origSingerQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.origSingerQuery.collapsed && <SimpleSearchPanel hook={origSinger} placeholder="請輸入歌手..." headers={origSingerHeaders} enableCopy={true} remakeColIndex={1} mpaColIndex={2} exactWidth={false} />}</div>}
                             {panels.specialQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-bolt text-orange-500"></i><span>特殊查詢</span></div><div className="flex items-center gap-3"><a href={links.others.epQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('specialQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.specialQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.specialQuery.collapsed && <SpecialSearchPanel hook={special} headers={specialHeaders} enableCopy={false} remakeColIndex={3} mpaColIndex={4} />}</div>}
-                            {panels.haojiQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-compact-disc text-orange-500"></i><span>豪記查詢</span></div><div className="flex items-center gap-3"><a href={links.others.haojiQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('haojiQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.haojiQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.haojiQuery.collapsed && <SimpleSearchPanel hook={haoji} placeholder="請輸入歌名..." headers={haojiHeaders} enableCopy={false} remakeColIndex={-1} mpaColIndex={-1} />}</div>}
+                            {panels.haojiQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-compact-disc text-orange-500"></i><span>豪記查詢</span></div><div className="flex items-center gap-3"><a href={links.others.haojiQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('haojiQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.haojiQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.haojiQuery.collapsed && <SimpleSearchPanel hook={haoji} placeholder="請輸入歌名..." headers={haojiHeaders} enableCopy={false} remakeColIndex={-1} mpaColIndex={-1} exactWidth={false} />}</div>}
                         </div>
                     </div>
                 </div>
