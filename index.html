@@ -259,6 +259,7 @@
                 .filter(Boolean);
             const unsungSingersText = [...new Set(unsungSingers)].join(".");
 
+            // 只取前 10 欄進行顯示，把第 11 欄(原唱)過濾掉
             const processedRecorded = originalData.recorded.map(r => {
                 const row = Array.isArray(r) ? [...r] : [...r.cells];
                 while(row.length < 10) row.push("-");
@@ -311,21 +312,19 @@
             
             const cache = useRef({}); 
 
-            // 確保有 clear 函式，防止切換選單時畫面掛掉
             const clear = () => { setTerm(""); setResults(null); setError(null); setLoading(false); };
 
             const search = async (customTerm) => { 
                 const q = customTerm !== undefined ? customTerm : term;
                 if(!q || !q.trim()) return; 
                 
-                // 第一層快取：當前畫面記憶體 (最高速)
                 if (cache.current[q]) {
                     setResults(cache.current[q]);
                     return;
                 }
 
-                // 第二層快取：瀏覽器 Session (防重整丟失)
-                const sessionKey = `unified_search_${q}`;
+                // 強制換新金鑰以防讀到舊版資料
+                const sessionKey = `unified_search_v34_${q}`;
                 try {
                     const stored = sessionStorage.getItem(sessionKey);
                     if (stored) {
@@ -343,7 +342,10 @@
 
                     const parseSafe = (text) => {
                         try { return JSON.parse(text); } 
-                        catch (e) { console.warn("API Response is not JSON"); return {}; }
+                        catch (e) { 
+                            console.warn("API Response is not JSON", text); 
+                            return { error: "後端回傳異常，請確認 Apps Script 是否已按步驟成功發佈新版本" }; 
+                        }
                     };
 
                     const allData = parseSafe(resText);
@@ -355,12 +357,13 @@
 
                     const mergedResults = [];
 
-                    // 建立原唱比對函式 (去除空格、大小寫，並支援包含關係。例如: "江蕙/施文彬" 與 "江蕙" 視為相符)
+                    // 原唱比對涵式 (容錯處理: 若其中一方空白，預設放行)
                     const isSingerMatch = (s1, s2) => {
-                        const c1 = (s1 || "").toString().replace(/\s/g, '').toLowerCase();
-                        const c2 = (s2 || "").toString().replace(/\s/g, '').toLowerCase();
-                        if (c1 === c2) return true; // 完全相同 (或皆為空值)
-                        if (c1 && c2 && (c1.includes(c2) || c2.includes(c1))) return true; // 有包含關係
+                        const c1 = (s1 || "").toString().replace(/[\s\-]/g, '').toLowerCase(); 
+                        const c2 = (s2 || "").toString().replace(/[\s\-]/g, '').toLowerCase();
+                        if (!c1 || !c2) return true; // 若有任何一方資料是空的，預設判定為相符以防消失
+                        if (c1 === c2) return true; 
+                        if (c1.includes(c2) || c2.includes(c1)) return true; 
                         return false;
                     };
 
@@ -391,14 +394,13 @@
                         });
                     });
                     
-                    // 寫入快取
                     cache.current[q] = mergedResults;
                     try { sessionStorage.setItem(sessionKey, JSON.stringify(mergedResults)); } catch(e){}
 
                     setResults(mergedResults);
                 } catch(err) {
                     console.error(err);
-                    setError("查詢失敗，後端異常或無權限。");
+                    setError(err.message || "查詢失敗，後端異常或無權限。");
                 } finally {
                     setLoading(false);
                 }
@@ -414,7 +416,7 @@
                     <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">{hook.loading?'...':'查詢'}</button>
                 </form>
                 <div className="text-gray-400 text-xs mb-2">一鍵查詢版權、已錄曲目、歌單資料。避開台語字。</div>
-                {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
+                {hook.error && <div className="text-red-600 bg-red-50 p-2 rounded border border-red-200 text-sm mb-2 font-bold"><i className="fas fa-exclamation-circle mr-1"></i>{hook.error}</div>}
                 {hook.results && (hook.results.length > 0 ? (
                     <ResultTable 
                         headers={headers} 
@@ -442,7 +444,7 @@
                     <button type="submit" disabled={hook.loading} className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">{hook.loading?'...':'查詢'}</button>
                 </form>
                 {note && <div className="text-gray-400 text-xs mb-2">{note}</div>}
-                {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
+                {hook.error && <div className="text-red-600 bg-red-50 p-2 rounded border border-red-200 text-sm mb-2 font-bold"><i className="fas fa-exclamation-circle mr-1"></i>{hook.error}</div>}
                 {hook.results && (hook.results.length > 0 ? (
                     <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} medleyColIndex={medleyColIndex} enableRowSelection={enableRowSelection} hiddenColumnsInCopy={hiddenColumnsInCopy} defaultColumnSelection={defaultColumnSelection} exactWidth={exactWidth} />
                 ) : (
@@ -456,7 +458,7 @@
                 <div className="flex gap-2 mb-4">
                     <button onClick={() => hook.search("45轉")} disabled={hook.loading} className="bg-blue-500 hover:bg-blue-600 text-white font-bold px-6 py-2 rounded shadow transition-colors">{hook.loading ? '...' : '45轉'}</button>
                 </div>
-                {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
+                {hook.error && <div className="text-red-600 bg-red-50 p-2 rounded border border-red-200 text-sm mb-2 font-bold"><i className="fas fa-exclamation-circle mr-1"></i>{hook.error}</div>}
                 {hook.results && (hook.results.length > 0 ? (
                     <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} />
                 ) : (
