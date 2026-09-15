@@ -50,6 +50,13 @@
         .cell-popup { position: fixed; z-index: 50; background: white; border: 1px solid #ccc; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border-radius: 6px; padding: 10px; max-width: 300px; word-wrap: break-word; white-space: pre-wrap; font-size: 0.9rem; color: #333; }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        
+        /* 鎖定左側展開欄位的 CSS */
+        .sticky-col-header { position: sticky; left: 0; z-index: 10; background-color: #F3F4F6; }
+        .sticky-col { position: sticky; left: 0; z-index: 10; background-color: white; border-right: 1px solid #E2E8F0; }
+        .result-table tr:hover .sticky-col { background-color: #FFF9E5; }
+        .row-expanded { background-color: #fff7ed !important; }
+        .row-expanded .sticky-col { background-color: #fff7ed !important; }
     </style>
 </head>
 <body>
@@ -92,7 +99,7 @@
             return str;
         };
 
-        const ResultTable = ({ headers, data, enableCopy, remakeColIndex, mpaColIndex, medleyColIndex, enableRowSelection, hiddenColumnsInCopy, defaultColumnSelection, expandedRowRender, autoWidth, exactWidth }) => {
+        const ResultTable = ({ headers, data, enableCopy, remakeColIndex, mpaColIndex, medleyColIndex, enableRowSelection, hiddenColumnsInCopy, defaultColumnSelection, expandedRowRender, isRowExpandable, autoWidth, exactWidth }) => {
             const [copyMode, setCopyMode] = useState(false);
             const [selectedCols, setSelectedCols] = useState([]);
             const [selectedRows, setSelectedRows] = useState(new Set());
@@ -176,11 +183,11 @@
                     <div className="overflow-x-auto border border-gray-200 rounded">
                         <table className="result-table text-left border-collapse" style={getTableWidthStyle()}>
                             <thead>
-                                {copyMode && (<tr className="bg-gray-50 border-b border-gray-200">{expandedRowRender && <th className="w-8"></th>}{enableRowSelection && <th className="w-10 p-1"></th>}{headers.map((_, i) => { if (hiddenColumnsInCopy && hiddenColumnsInCopy.includes(i)) return null;
+                                {copyMode && (<tr className="bg-gray-50 border-b border-gray-200">{expandedRowRender && <th className="w-8 sticky-col-header"></th>}{enableRowSelection && <th className="w-10 p-1"></th>}{headers.map((_, i) => { if (hiddenColumnsInCopy && hiddenColumnsInCopy.includes(i)) return null;
                                 return <th key={i} style={{width: headers[i].width}} className="text-center p-1"><input type="checkbox" checked={selectedCols.includes(i)} onChange={() => toggleCol(i)} className="cursor-pointer" /></th>;
                                 })}</tr>)}
                                 <tr>
-                                    {expandedRowRender && <th className="w-8 text-center bg-gray-100"></th>}
+                                    {expandedRowRender && <th className="w-8 text-center bg-gray-100 sticky-col-header"></th>}
                                     {copyMode && enableRowSelection && <th className="w-10 text-center bg-gray-100"><i className="fas fa-check-square text-gray-400"></i></th>}
                                     {headers.map((h, i) => { 
                                         if (copyMode && hiddenColumnsInCopy && hiddenColumnsInCopy.includes(i)) return null; 
@@ -191,12 +198,14 @@
                                 {displayData.map((row, ri) => {
                                     const rowData = Array.isArray(row) ? row : row.cells;
                                     const isExpanded = expandedRows.has(ri);
+                                    const canExpand = isRowExpandable ? isRowExpandable(row) : true;
+
                                     return (
                                         <React.Fragment key={ri}>
-                                            <tr className={`${copyMode && enableRowSelection && selectedRows.has(ri) ? "bg-blue-50" : ""} ${isExpanded ? "bg-orange-50/50" : ""}`}>
+                                            <tr className={`${copyMode && enableRowSelection && selectedRows.has(ri) ? "bg-blue-50" : ""} ${isExpanded ? "row-expanded" : ""}`}>
                                                 {expandedRowRender && (
-                                                    <td className="text-center w-8 cursor-pointer hover:bg-orange-100 transition-colors" onClick={(e) => { e.stopPropagation(); toggleRowExpand(ri); }}>
-                                                        <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-orange-500`}></i>
+                                                    <td className={`text-center w-8 sticky-col ${canExpand ? 'cursor-pointer hover:bg-orange-100 transition-colors' : ''}`} onClick={(e) => { if(canExpand) { e.stopPropagation(); toggleRowExpand(ri); } }}>
+                                                        {canExpand && <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-orange-500`}></i>}
                                                     </td>
                                                 )}
                                                 {copyMode && enableRowSelection && (<td className="text-center border-r border-gray-200"><input type="checkbox" checked={selectedRows.has(ri)} onChange={() => toggleRow(ri)} className="cursor-pointer w-4 h-4" /></td>)}
@@ -215,9 +224,9 @@
                                                     );
                                                 })}
                                             </tr>
-                                            {isExpanded && expandedRowRender && (
+                                            {isExpanded && expandedRowRender && canExpand && (
                                                 <tr>
-                                                    <td colSpan={rowData.length + (expandedRowRender ? 1 : 0) + (copyMode && enableRowSelection ? 1 : 0)} className="p-0 border-0">
+                                                    <td colSpan={rowData.length + (expandedRowRender ? 1 : 0) + (copyMode && enableRowSelection ? 1 : 0)} className="p-0 border-0 bg-orange-50/20">
                                                         {expandedRowRender(row)}
                                                     </td>
                                                 </tr>
@@ -257,11 +266,7 @@
             });
 
             return (
-                <div className="flex flex-col gap-4 p-4 pl-5 border-l-4 border-orange-400 bg-orange-50/30 m-2 shadow-sm rounded-r">
-                    <div className="text-xs font-normal text-gray-500 border-b border-orange-200 pb-2 flex items-center gap-2">
-                        <i className="fas fa-link text-orange-400"></i> 「{originalData.songName}」的詳細關聯資料
-                    </div>
-
+                <div className="flex flex-col gap-4 p-4 pl-5 border-l-4 border-orange-400 m-2 shadow-sm rounded-r bg-white">
                     <div className="flex flex-col gap-4 items-start w-max max-w-full">
                         {processedRecorded.length > 0 && (
                             <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden overflow-x-auto w-max max-w-full">
@@ -280,7 +285,7 @@
                                 <table className="result-table text-left border-collapse" style={{ width: 'max-content' }}>
                                     <thead>
                                         <tr>
-                                            <th style={{ width: '150px' }} className="bg-gray-100 text-center">未唱過之歌手</th>
+                                            <th style={{ width: '150px' }} className="bg-gray-100 text-center">開過未唱過</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -292,19 +297,6 @@
                                     </tbody>
                                 </table>
                             </div>
-                        )}
-
-                        {originalData.haoji.length > 0 && (
-                            <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden overflow-x-auto w-max max-w-full">
-                                <div className="bg-purple-100 px-3 py-1.5 font-bold text-purple-800 text-sm flex items-center gap-2 border-b border-purple-200">
-                                    <i className="fas fa-compact-disc"></i> 豪記資料 <span className="bg-purple-600 text-white text-xs px-2 rounded-full ml-auto">{originalData.haoji.length}</span>
-                                </div>
-                                <ResultTable headers={haojiHeaders} data={originalData.haoji} enableCopy={false} exactWidth={true} />
-                            </div>
-                        )}
-
-                        {processedRecorded.length === 0 && originalData.songList.length === 0 && originalData.haoji.length === 0 && (
-                            <div className="text-gray-400 text-sm italic py-2">無其他詳細關聯資料。</div>
                         )}
                     </div>
                 </div>
@@ -318,6 +310,9 @@
             const [error, setError] = useState(null);
             
             const cache = useRef({}); 
+
+            // 確保有 clear 函式，防止切換選單時畫面掛掉
+            const clear = () => { setTerm(""); setResults(null); setError(null); setLoading(false); };
 
             const search = async (customTerm) => { 
                 const q = customTerm !== undefined ? customTerm : term;
@@ -357,36 +352,20 @@
                     const copyrightData = allData.copyright || [];
                     const recData = allData.recorded || [];
                     const listData = allData.songList || [];
-                    const haojiData = allData.haoji || [];
 
                     const mergedResults = [];
-                    const processedSongNames = new Set();
 
                     copyrightData.forEach(row => {
                         const songName = getText(row[2]).trim();
-                        processedSongNames.add(songName);
+                        const recs = recData.filter(r => getText(r[3]).trim() === songName);
+                        const lists = listData.filter(r => getText(r[3]).trim() === songName);
                         mergedResults.push({
                             cells: row,
                             songName: songName,
-                            recorded: recData.filter(r => getText(r[3]).trim() === songName),
-                            songList: listData.filter(r => getText(r[3]).trim() === songName),
-                            haoji: haojiData.filter(r => getText(r[1]).trim() === songName)
+                            recorded: recs,
+                            songList: lists,
+                            hasDetails: recs.length > 0 || lists.length > 0 // 判斷是否有資料可以展開
                         });
-                    });
-
-                    haojiData.forEach(hRow => {
-                        const songName = getText(hRow[1]).trim();
-                        if (!processedSongNames.has(songName)) {
-                            processedSongNames.add(songName);
-                            const copyrightRow = ["-", "-", songName, "豪記", "無收費", getText(hRow[6]), getText(hRow[2]), "", "【無版權底檔】", getText(hRow[3]), "-", "-", "-", getText(hRow[4]), "-", "-", "-", "-"];
-                            mergedResults.push({
-                                cells: copyrightRow,
-                                songName: songName,
-                                recorded: recData.filter(r => getText(r[3]).trim() === songName),
-                                songList: listData.filter(r => getText(r[3]).trim() === songName),
-                                haoji: [hRow]
-                            });
-                        }
                     });
                     
                     // 寫入快取
@@ -401,7 +380,7 @@
                     setLoading(false);
                 }
             };
-            return { term, setTerm, results, setResults, loading, error, search };
+            return { term, setTerm, results, setResults, loading, error, search, clear };
         };
 
         const UnifiedSearchBlock = ({ hook, label, headers, enableCopy, remakeColIndex, mpaColIndex }) => (
@@ -411,17 +390,28 @@
                     <input type="text" value={hook.term} onChange={(e)=>hook.setTerm(e.target.value)} placeholder="請輸入歌名查詢綜合資料" className="flex-1 border-2 border-orange-300 rounded px-3 py-2 focus:outline-none focus:border-orange-500 transition-colors bg-orange-50/30" />
                     <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">{hook.loading?'...':'查詢'}</button>
                 </form>
-                <div className="text-gray-400 text-xs mb-2">一鍵查詢版權、已錄曲目、歌單、豪記資料。避開台語字。</div>
+                <div className="text-gray-400 text-xs mb-2">一鍵查詢版權、已錄曲目、歌單資料。避開台語字。</div>
                 {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
                 {hook.results && (hook.results.length > 0 ? (
-                    <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} enableRowSelection={true} hiddenColumnsInCopy={[0, 1]} defaultColumnSelection='all' expandedRowRender={(row) => <UnifiedExpandedRow originalData={row} />} />
+                    <ResultTable 
+                        headers={headers} 
+                        data={hook.results} 
+                        enableCopy={enableCopy} 
+                        remakeColIndex={remakeColIndex} 
+                        mpaColIndex={mpaColIndex} 
+                        enableRowSelection={true} 
+                        hiddenColumnsInCopy={[0, 1]} 
+                        defaultColumnSelection='all' 
+                        expandedRowRender={(row) => <UnifiedExpandedRow originalData={row} />} 
+                        isRowExpandable={(row) => row.hasDetails} 
+                    />
                 ) : (
                     <div className="text-center p-4 text-gray-500 font-bold">'{hook.term}' 查無資料</div>
                 ))}
             </div>
         );
 
-        const SimpleSearchPanel = ({ hook, placeholder, headers, enableCopy, remakeColIndex, mpaColIndex, medleyColIndex, note, extraControl, enableRowSelection, hiddenColumnsInCopy, defaultColumnSelection }) => (
+        const SimpleSearchPanel = ({ hook, placeholder, headers, enableCopy, remakeColIndex, mpaColIndex, medleyColIndex, note, extraControl, enableRowSelection, hiddenColumnsInCopy, defaultColumnSelection, exactWidth }) => (
             <div className="p-4 bg-white">
                 <form onSubmit={(e)=>{e.preventDefault();hook.search(hook.term)}} className="flex gap-2 mb-1 items-center">
                     <input type="text" value={hook.term} onChange={(e)=>hook.setTerm(e.target.value)} placeholder={placeholder} className="flex-1 border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-400 transition-colors" />
@@ -431,7 +421,7 @@
                 {note && <div className="text-gray-400 text-xs mb-2">{note}</div>}
                 {hook.error && <div className="text-red-500 text-sm mb-2">{hook.error}</div>}
                 {hook.results && (hook.results.length > 0 ? (
-                    <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} medleyColIndex={medleyColIndex} enableRowSelection={enableRowSelection} hiddenColumnsInCopy={hiddenColumnsInCopy} defaultColumnSelection={defaultColumnSelection} />
+                    <ResultTable headers={headers} data={hook.results} enableCopy={enableCopy} remakeColIndex={remakeColIndex} mpaColIndex={mpaColIndex} medleyColIndex={medleyColIndex} enableRowSelection={enableRowSelection} hiddenColumnsInCopy={hiddenColumnsInCopy} defaultColumnSelection={defaultColumnSelection} exactWidth={exactWidth} />
                 ) : (
                     <div className="text-center p-4 text-gray-500 font-bold">'{hook.term}' 查無資料</div>
                 ))}
@@ -537,18 +527,17 @@
             const origSingerHeaders = [{render:"歌名",width:"150px"},{render:"重製",width:"55px"},{render:"MPA",width:"55px"},{render:"首句歌詞",width:"160px"},{render:"原唱人",width:"70px"},{render:"連結",width:"60px"},{render:"特殊備註",width:"120px"},{render:"作詞人",width:"70px"},{render:()=><span>詞<br/>公權</span>,width:"55px"},{render:"詞重權",width:"70px"},{render:()=><span>詞<br/>百分比</span>,width:"55px"},{render:"作曲人",width:"70px"},{render:"曲公權",width:"55px"},{render:"曲重權",width:"70px"},{render:()=><span>曲<br/>百分比</span>,width:"55px"},{render:"編曲",width:"70px"}];
             const specialHeaders = [{title:"次數",width:"50px"},{title:"歌名",width:"150px"},{title:"組曲",width:"40px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
             const singerListHeaders = [{title:"唱過",width:"50px"},{title:"日期",width:"80px"},{title:"歌手",width:"70px"},{title:"歌名",width:"150px"},{title:"原唱",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"180px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"}];
-            // 更新了 epHeaders 的定義，移除版權相關欄位，加入全集/分段/純享
             const epHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"70px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"全集",width:"60px"},{title:"分段",width:"60px"},{title:"純享",width:"60px"}];
             const singerSungHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"100px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"90px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"60px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"120px"}];
 
             const links = {
                 download: { authPublic: "https://docs.google.com/document/d/1clnHPqpcsxw1eZromz-LdavIyeA5jUKDGxia8Tg2Bk4/export?format=docx", authRemake: "https://docs.google.com/document/d/18D2Lp3wE2C5gFXDbqT7FvNc2sZn4nTojsKDGM-rY4GE/export?format=docx", authPaidRemake: "https://drive.google.com/drive/folders/1s2EBcyseMHUNNR4kOaF8G1zdBrG5JxA3?usp=sharing" },
                 program: { schedule: "https://docs.google.com/spreadsheets/d/1WULc6ENn4a6_VolJX_1rMjKnRbNzf3SwPRr7geLXnCQ/edit?gid=580247079#gid=580247079", icebing: "https://docs.google.com/spreadsheets/u/0/d/1lQcpINzgcsEWdl-PZpUTxpiFA90KE6DnN_70xFwl8fk/edit" },
-                copyright: { member: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=1616151799#gid=1616151799", mpa: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1591903723#gid=1591903723", querySource: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=2016844342#gid=2016844342", must: "https://www.must.org.tw/tw/chinese_musical/02.aspx", origQuerySource: "https://docs.google.com/spreadsheets/d/1picJxZ8ue9DM7EHS86TdVAHdr-Qty0nd5eEMvOXCUIY/edit?gid=348730547#gid=348730547" },
+                copyright: { member: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=1616151799#gid=1616151799", mpa: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1591903723#gid=1591903723", querySource: "https://docs.google.com/spreadsheets/d/1KxHAmz57FOu8ti8l_Zd96lrwCfO5wexPRV0jsvNaVGA/edit?gid=0#gid=0", must: "https://www.must.org.tw/tw/chinese_musical/02.aspx", origQuerySource: "https://docs.google.com/spreadsheets/d/1picJxZ8ue9DM7EHS86TdVAHdr-Qty0nd5eEMvOXCUIY/edit?gid=348730547#gid=348730547" },
                 others: { singerListSource: "https://docs.google.com/spreadsheets/d/1mt4dVA3_VmqzyKjf0jbmYQMzJl0sef4G2hcqve7KDQ0/edit?gid=530920512#gid=530920512", epQuerySource: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=0#gid=0", recordedQuerySource: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=0#gid=0", singerSungQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=399230212#gid=399230212", haojiQuerySource: "https://docs.google.com/spreadsheets/d/1BiIWEn1Yh22nOZM_z-HFyNryX_AsjmjnH366VUDRuPg/edit?gid=829761523#gid=829761523", haojiQuery: "#" }
             };
 
-            const [panels, setPanels] = useState({unified:{visible:true,collapsed:false},singerList:{visible:false,collapsed:false},epQuery:{visible:false,collapsed:false},singerSungQuery:{visible:false,collapsed:false},origSingerQuery:{visible:false,collapsed:false},specialQuery:{visible:false,collapsed:false},webQuery:{visible:true,collapsed:true}});
+            const [panels, setPanels] = useState({unified:{visible:true,collapsed:false},singerList:{visible:false,collapsed:false},epQuery:{visible:false,collapsed:false},singerSungQuery:{visible:false,collapsed:false},origSingerQuery:{visible:false,collapsed:false},specialQuery:{visible:false,collapsed:false},haojiQuery:{visible:false,collapsed:false},webQuery:{visible:true,collapsed:true}});
 
             const useSearch = (type) => {
                 const [term, setTerm] = useState("");
@@ -585,6 +574,7 @@
             const singerSung = useSearch('singerSung'); 
             const origSinger = useSearch('origSinger');
             const special = useSearch('special');
+            const haojiQuery = useSearch('haoji'); // 新增豪記 Hook
             
             const [singerExcludeSung, setSingerExcludeSung] = useState(false);
             
@@ -596,6 +586,7 @@
                     else if(key==='singerSungQuery')singerSung.clear(); 
                     else if(key==='origSingerQuery')origSinger.clear(); 
                     else if(key==='specialQuery')special.clear(); 
+                    else if(key==='haojiQuery')haojiQuery.clear(); 
                 } 
                 return {...prev,[key]:{...prev[key],visible:!prev[key].visible,collapsed:false}}; 
             });
@@ -629,6 +620,7 @@
                                             <button onClick={()=>togglePanelVisibility('singerList')} className={`menu-link text-sm text-left ${panels.singerList.visible?'active':''}`}><i className={`fas fa-microphone-alt mr-1 ${panels.singerList.visible?'text-orange-500':'text-gray-400'}`}></i>歌手歌單查詢</button>
                                             <button onClick={()=>togglePanelVisibility('singerSungQuery')} className={`menu-link text-sm text-left ${panels.singerSungQuery.visible?'active':''}`}><i className={`fas fa-user-tag mr-1 ${panels.singerSungQuery.visible?'text-orange-500':'text-gray-400'}`}></i>歌手已唱查詢</button>
                                             <button onClick={()=>togglePanelVisibility('origSingerQuery')} className={`menu-link text-sm text-left ${panels.origSingerQuery.visible?'active':''}`}><i className={`fas fa-star mr-1 ${panels.origSingerQuery.visible?'text-orange-500':'text-gray-400'}`}></i>建檔原唱查詢</button>
+                                            <button onClick={()=>togglePanelVisibility('haojiQuery')} className={`menu-link text-sm text-left ${panels.haojiQuery.visible?'active':''}`}><i className={`fas fa-compact-disc mr-1 ${panels.haojiQuery.visible?'text-orange-500':'text-gray-400'}`}></i>豪記查詢</button>
                                             <button onClick={()=>togglePanelVisibility('specialQuery')} className={`menu-link text-sm text-left ${panels.specialQuery.visible?'active':''}`}><i className={`fas fa-bolt mr-1 ${panels.specialQuery.visible?'text-orange-500':'text-gray-400'}`}></i>特殊查詢</button>
                                         </div>
                                     </div>
@@ -640,7 +632,10 @@
                             </div>
 
                             {}
-                            {panels.unified.visible && <div className="search-panel card-shadow border-orange-400 border-2"><div className="search-header p-3 flex justify-between items-center border-b border-orange-200 bg-orange-50"><div className="flex items-center gap-2"><i className="fas fa-search-plus text-orange-500 text-lg"></i><span className="font-bold text-orange-800">綜合歌名查詢 (版權 / 紀錄 / 豪記)</span></div><div className="flex items-center gap-3"><a href={links.copyright.querySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟試算表</a><button onClick={()=>togglePanelCollapse('unified')} className="w-6 h-6 rounded-full hover:bg-orange-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.unified.collapsed ? 'down' : 'up'} text-orange-500`}></i></button></div></div>{!panels.unified.collapsed && <div className="p-4 bg-white"><UnifiedSearchBlock hook={unifiedSearch} label="輸入歌名自動搜索關聯資料" headers={copyrightHeaders} enableCopy={true} remakeColIndex={3} mpaColIndex={4} /></div>}</div>}
+                            {panels.unified.visible && <div className="search-panel card-shadow border-orange-400 border-2"><div className="search-header p-3 flex justify-between items-center border-b border-orange-200 bg-orange-50"><div className="flex items-center gap-2"><i className="fas fa-search-plus text-orange-500 text-lg"></i><span className="font-bold text-orange-800">綜合歌名查詢 (版權 / 紀錄 / 歌單)</span></div><div className="flex items-center gap-3"><a href={links.copyright.querySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>簡易版搜尋</a><button onClick={()=>togglePanelCollapse('unified')} className="w-6 h-6 rounded-full hover:bg-orange-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.unified.collapsed ? 'down' : 'up'} text-orange-500`}></i></button></div></div>{!panels.unified.collapsed && <div className="p-4 bg-white"><UnifiedSearchBlock hook={unifiedSearch} label="輸入歌名自動搜索關聯資料" headers={copyrightHeaders} enableCopy={true} remakeColIndex={3} mpaColIndex={4} /></div>}</div>}
+                            
+                            {panels.haojiQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-compact-disc text-blue-500"></i><span>豪記查詢</span></div><div className="flex items-center gap-3"><a href={links.others.haojiQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('haojiQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.haojiQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.haojiQuery.collapsed && <SimpleSearchPanel hook={haojiQuery} placeholder="請輸入豪記歌名..." headers={haojiHeaders} enableCopy={true} defaultColumnSelection="none" exactWidth={true} />}</div>}
+
                             {panels.epQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-list-ol text-blue-500"></i><span>集數查詢</span></div><div className="flex items-center gap-3"><a href={links.others.epQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('epQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.epQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.epQuery.collapsed && <SimpleSearchPanel hook={epQuery} placeholder="請輸入集數..." headers={epHeaders} enableCopy={true} defaultColumnSelection="none" remakeColIndex={7} mpaColIndex={8} medleyColIndex={5} />}</div>}
                             {panels.singerList.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-microphone-alt text-blue-500"></i><span>歌手歌單查詢</span></div><div className="flex items-center gap-3"><a href={links.others.singerListSource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('singerList')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.singerList.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.singerList.collapsed && <SimpleSearchPanel hook={singerList} placeholder="請輸入歌手姓名..." headers={singerListHeaders} enableCopy={false} remakeColIndex={5} mpaColIndex={6} extraControl={<label className="flex items-center gap-2 cursor-pointer bg-gray-100 px-3 py-2 rounded border border-gray-300 hover:bg-gray-200 transition-colors select-none"><input type="checkbox" checked={singerExcludeSung} onChange={handleSingerCheckboxChange} className="w-4 h-4 text-orange-500 focus:ring-orange-400 cursor-pointer" /><span className="text-sm font-bold text-gray-700">排除已唱</span></label>} />}</div>}
                             {panels.singerSungQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-user-tag text-blue-500"></i><span>歌手已唱查詢</span></div><div className="flex items-center gap-3"><a href={links.others.singerSungQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('singerSungQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.singerSungQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.singerSungQuery.collapsed && <SimpleSearchPanel hook={singerSung} placeholder="請輸入歌手姓名..." headers={singerSungHeaders} enableCopy={false} remakeColIndex={7} mpaColIndex={8} medleyColIndex={5} />}</div>}
