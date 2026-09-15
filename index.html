@@ -355,10 +355,33 @@
 
                     const mergedResults = [];
 
+                    // 建立原唱比對函式 (去除空格、大小寫，並支援包含關係。例如: "江蕙/施文彬" 與 "江蕙" 視為相符)
+                    const isSingerMatch = (s1, s2) => {
+                        const c1 = (s1 || "").toString().replace(/\s/g, '').toLowerCase();
+                        const c2 = (s2 || "").toString().replace(/\s/g, '').toLowerCase();
+                        if (c1 === c2) return true; // 完全相同 (或皆為空值)
+                        if (c1 && c2 && (c1.includes(c2) || c2.includes(c1))) return true; // 有包含關係
+                        return false;
+                    };
+
                     copyrightData.forEach(row => {
                         const songName = getText(row[2]).trim();
-                        const recs = recData.filter(r => getText(r[3]).trim() === songName);
-                        const lists = listData.filter(r => getText(r[3]).trim() === songName);
+                        const origSinger = getText(row[6]).trim(); // 版權資料的原唱人 (索引 6)
+
+                        // 過濾紀錄：必須「歌名相符」且「原唱相符」
+                        const recs = recData.filter(r => {
+                            const rSongName = getText(r[3]).trim();
+                            const rOrigSinger = getText(r[10]).trim(); // 後端傳來的 Q欄 原唱 (索引 10)
+                            return rSongName === songName && isSingerMatch(rOrigSinger, origSinger);
+                        });
+
+                        // 過濾歌單：必須「歌名相符」且「原唱相符」
+                        const lists = listData.filter(r => {
+                            const rSongName = getText(r[3]).trim();
+                            const rOrigSinger = getText(r[4]).trim(); // 歌單的 E欄 原唱 (索引 4)
+                            return rSongName === songName && isSingerMatch(rOrigSinger, origSinger);
+                        });
+
                         mergedResults.push({
                             cells: row,
                             songName: songName,
@@ -574,7 +597,7 @@
             const singerSung = useSearch('singerSung'); 
             const origSinger = useSearch('origSinger');
             const special = useSearch('special');
-            const haojiQuery = useSearch('haoji'); // 新增豪記 Hook
+            const haojiQuery = useSearch('haoji'); 
             
             const [singerExcludeSung, setSingerExcludeSung] = useState(false);
             
