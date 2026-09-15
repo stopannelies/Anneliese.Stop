@@ -322,7 +322,7 @@
                     return;
                 }
 
-                const sessionKey = `unified_search_v34_${q}`;
+                const sessionKey = `unified_search_v35_${q}`;
                 try {
                     const stored = sessionStorage.getItem(sessionKey);
                     if (stored) {
@@ -331,19 +331,18 @@
                         setResults(parsed);
                         return;
                     }
-                } catch(e) { console.warn("Session Storage 無法存取"); }
+                } catch(e) {}
 
                 setLoading(true); setResults(null); setError(null); 
                 try {
                     const fetchOptions = { headers: { 'Accept': 'application/json' } };
                     const resText = await fetch(`${API_URL}?op=search&type=unified&q=${encodeURIComponent(q)}`, fetchOptions).then(r => r.text());
 
-                    // 除錯處理：如果後端回傳的不是 JSON (例如發生 Google 登入網頁、HTML 錯誤頁面)，直接印出讓用戶看見
                     let allData;
                     try {
                         allData = JSON.parse(resText);
                     } catch (e) {
-                        throw new Error("後端回傳非 JSON 格式。原始內容預覽：" + resText.substring(0, 150));
+                        throw new Error("後端回傳格式異常 (非 JSON)。網址可能錯誤或需要重新授權。");
                     }
 
                     if(allData.error) throw new Error(allData.error);
@@ -354,11 +353,10 @@
 
                     const mergedResults = [];
 
-                    // 原唱比對函式 (容錯處理: 若其中一方空白，預設放行)
                     const isSingerMatch = (s1, s2) => {
                         const c1 = (s1 || "").toString().replace(/[\s\-]/g, '').toLowerCase(); 
                         const c2 = (s2 || "").toString().replace(/[\s\-]/g, '').toLowerCase();
-                        if (!c1 || !c2) return true; // 若有任何一方資料是空的，預設判定為相符以防消失
+                        if (!c1 || !c2) return true; 
                         if (c1 === c2) return true; 
                         if (c1.includes(c2) || c2.includes(c1)) return true; 
                         return false;
@@ -368,17 +366,15 @@
                         const songName = getText(row[2]).trim();
                         const origSinger = getText(row[6]).trim(); // 版權資料的原唱人 (索引 6)
 
-                        // 過濾紀錄：必須「歌名相符」且「原唱相符」
                         const recs = recData.filter(r => {
                             const rSongName = getText(r[3]).trim();
-                            const rOrigSinger = getText(r[10]).trim(); // 後端傳來的 Q欄 原唱 (索引 10)
+                            const rOrigSinger = getText(r[10]).trim(); // Q欄 原唱
                             return rSongName === songName && isSingerMatch(rOrigSinger, origSinger);
                         });
 
-                        // 過濾歌單：必須「歌名相符」且「原唱相符」
                         const lists = listData.filter(r => {
                             const rSongName = getText(r[3]).trim();
-                            const rOrigSinger = getText(r[4]).trim(); // 歌單的 E欄 原唱 (索引 4)
+                            const rOrigSinger = getText(r[4]).trim(); // E欄 原唱
                             return rSongName === songName && isSingerMatch(rOrigSinger, origSinger);
                         });
 
@@ -387,7 +383,7 @@
                             songName: songName,
                             recorded: recs,
                             songList: lists,
-                            hasDetails: recs.length > 0 || lists.length > 0 // 判斷是否有資料可以展開
+                            hasDetails: recs.length > 0 || lists.length > 0
                         });
                     });
                     
@@ -481,7 +477,9 @@
         };
 
         const App = () => {
+            // ⚠️ 請確認此 API_URL 網址與您 Google Apps Script 佈署後的最新網頁應用程式網址完全相符！
             const API_URL = "https://script.google.com/macros/s/AKfycbzF7XVJK-rIoHBIQvEVF1c4AJJNR4x5f-wkqAaWwCLb9yMflTE3_c9MSEzwwglQQFTwYw/exec";
+            
             const [sheetData, setSheetData] = useState(null);
             const [isLoadingInfo, setIsLoadingInfo] = useState(true);
             const [apiError, setApiError] = useState(null);
@@ -497,13 +495,11 @@
                         if(data.error) setApiError(data.error);
                         else setSheetData(data);
                     } catch (e) {
-                        console.warn("Info API returned non-JSON.");
-                        setApiError("後端異常或無權限");
+                        setApiError("後端回傳非 JSON 格式");
                     }
                     setIsLoadingInfo(false);
                 })
                 .catch(err => {
-                    console.error(err);
                     setApiError("連線失敗");
                     setIsLoadingInfo(false);
                 });
@@ -582,7 +578,6 @@
                         setLoading(false);
                     })
                     .catch(err=>{
-                        console.error(err);
                         setError("讀取失敗");
                         setLoading(false);
                     }); 
@@ -674,4 +669,3 @@
     </script>
 </body>
 </html>
-```eof
