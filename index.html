@@ -259,7 +259,6 @@
                 .filter(Boolean);
             const unsungSingersText = [...new Set(unsungSingers)].join(".");
 
-            // 只取前 10 欄進行顯示，把第 11 欄(原唱)過濾掉
             const processedRecorded = originalData.recorded.map(r => {
                 const row = Array.isArray(r) ? [...r] : [...r.cells];
                 while(row.length < 10) row.push("-");
@@ -323,7 +322,6 @@
                     return;
                 }
 
-                // 強制換新金鑰以防讀到舊版資料
                 const sessionKey = `unified_search_v34_${q}`;
                 try {
                     const stored = sessionStorage.getItem(sessionKey);
@@ -340,15 +338,14 @@
                     const fetchOptions = { headers: { 'Accept': 'application/json' } };
                     const resText = await fetch(`${API_URL}?op=search&type=unified&q=${encodeURIComponent(q)}`, fetchOptions).then(r => r.text());
 
-                    const parseSafe = (text) => {
-                        try { return JSON.parse(text); } 
-                        catch (e) { 
-                            console.warn("API Response is not JSON", text); 
-                            return { error: "後端回傳異常，請確認 Apps Script 是否已按步驟成功發佈新版本" }; 
-                        }
-                    };
+                    // 除錯處理：如果後端回傳的不是 JSON (例如發生 Google 登入網頁、HTML 錯誤頁面)，直接印出讓用戶看見
+                    let allData;
+                    try {
+                        allData = JSON.parse(resText);
+                    } catch (e) {
+                        throw new Error("後端回傳非 JSON 格式。原始內容預覽：" + resText.substring(0, 150));
+                    }
 
-                    const allData = parseSafe(resText);
                     if(allData.error) throw new Error(allData.error);
 
                     const copyrightData = allData.copyright || [];
@@ -357,7 +354,7 @@
 
                     const mergedResults = [];
 
-                    // 原唱比對涵式 (容錯處理: 若其中一方空白，預設放行)
+                    // 原唱比對函式 (容錯處理: 若其中一方空白，預設放行)
                     const isSingerMatch = (s1, s2) => {
                         const c1 = (s1 || "").toString().replace(/[\s\-]/g, '').toLowerCase(); 
                         const c2 = (s2 || "").toString().replace(/[\s\-]/g, '').toLowerCase();
@@ -677,3 +674,4 @@
     </script>
 </body>
 </html>
+```eof
