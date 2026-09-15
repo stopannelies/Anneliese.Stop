@@ -323,8 +323,7 @@
                     return;
                 }
 
-                // 強制換新金鑰以防讀到舊版資料
-                const sessionKey = `unified_search_v34_${q}`;
+                const sessionKey = `unified_search_v35_${q}`;
                 try {
                     const stored = sessionStorage.getItem(sessionKey);
                     if (stored) {
@@ -344,7 +343,7 @@
                         try { return JSON.parse(text); } 
                         catch (e) { 
                             console.warn("API Response is not JSON", text); 
-                            return { error: "後端回傳異常，請確認 Apps Script 是否已按步驟成功發佈新版本" }; 
+                            return { error: "後端回傳異常，這通常是因為 Google 伺服器忙碌中或 API 執行超時，請稍後再試。" }; 
                         }
                     };
 
@@ -357,11 +356,20 @@
 
                     const mergedResults = [];
 
-                    // 原唱比對涵式 (容錯處理: 若其中一方空白，預設放行)
+                    // ==========================================
+                    // 修正 1：原唱精準比對邏輯
+                    // ==========================================
                     const isSingerMatch = (s1, s2) => {
                         const c1 = (s1 || "").toString().replace(/[\s\-]/g, '').toLowerCase(); 
                         const c2 = (s2 || "").toString().replace(/[\s\-]/g, '').toLowerCase();
-                        if (!c1 || !c2) return true; // 若有任何一方資料是空的，預設判定為相符以防消失
+                        
+                        // 若兩個都是空白，代表完全相符
+                        if (!c1 && !c2) return true;
+                        
+                        // 若一個有值一個空白，代表不相符
+                        if (!c1 || !c2) return false;
+                        
+                        // 若兩個都有值，進行包含比對
                         if (c1 === c2) return true; 
                         if (c1.includes(c2) || c2.includes(c1)) return true; 
                         return false;
@@ -400,7 +408,7 @@
                     setResults(mergedResults);
                 } catch(err) {
                     console.error(err);
-                    setError(err.message || "查詢失敗，後端異常或無權限。");
+                    setError(err.message || "查詢失敗，請稍後再試。");
                 } finally {
                     setLoading(false);
                 }
@@ -580,13 +588,13 @@
                             if(data.error) throw new Error(data.error);
                             setResults(data);
                         } catch(e) {
-                            throw new Error("後端異常或無權限");
+                            throw new Error("伺服器忙碌中或讀取超時，請稍後再試。");
                         }
                         setLoading(false);
                     })
                     .catch(err=>{
                         console.error(err);
-                        setError("讀取失敗");
+                        setError("網路連線失敗或讀取超時。");
                         setLoading(false);
                     }); 
                 };
