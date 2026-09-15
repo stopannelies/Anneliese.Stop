@@ -323,7 +323,8 @@
                     return;
                 }
 
-                const sessionKey = `unified_search_v35_${q}`;
+                // 強制換新金鑰以防讀到舊版資料
+                const sessionKey = `unified_search_v36_${q}`;
                 try {
                     const stored = sessionStorage.getItem(sessionKey);
                     if (stored) {
@@ -356,20 +357,18 @@
 
                     const mergedResults = [];
 
-                    // ==========================================
-                    // 修正 1：原唱精準比對邏輯
-                    // ==========================================
+                    // 原唱比對涵式 (容錯處理: 修正為雙方空白才相符)
                     const isSingerMatch = (s1, s2) => {
                         const c1 = (s1 || "").toString().replace(/[\s\-]/g, '').toLowerCase(); 
                         const c2 = (s2 || "").toString().replace(/[\s\-]/g, '').toLowerCase();
                         
-                        // 若兩個都是空白，代表完全相符
+                        // 1. 若兩個都是空白，代表完全相符
                         if (!c1 && !c2) return true;
                         
-                        // 若一個有值一個空白，代表不相符
+                        // 2. 若一個有值一個空白，代表不相符
                         if (!c1 || !c2) return false;
                         
-                        // 若兩個都有值，進行包含比對
+                        // 3. 若兩個都有值，進行包含比對
                         if (c1 === c2) return true; 
                         if (c1.includes(c2) || c2.includes(c1)) return true; 
                         return false;
