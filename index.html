@@ -366,16 +366,17 @@
                     return [r[0], newR1, r[2], r[3], r[4], info?info.r:"", info?info.m:"", info?info.l:"", info?info.o:"", info?info.k:"", info?info.n:""];
                 });
             }
+            // === 修復：將 ep 的表頭與資料陣列長度恢復成原本完整的設計 ===
             else if (type === 'ep' || type === 'recorded') {
-                const raw = db.epInfo_B_AB.map(r => r.slice(0, 16));
+                const raw = db.epInfo_B_AB;
                 if (type === 'ep') {
                     data = raw.filter(r => r[0] && r[0].toString().includes(k1)).map(r => [
                         r[0], fmtFull(r[1]), r[2], r[3], r[4], r[5], fmtFull(r[6]),
-                        r[8] || "-", r[9] || "-", r[10] || "-" 
+                        r[7], r[8], r[9], r[10], r[11], r[12], r[13], r[14], r[15],
+                        r[16], r[17], r[18], r[19], r[20], r[21]
                     ]);
                 } else {
-                    const rawForSinger = db.epInfo_B_AB; 
-                    data = rawForSinger.filter(r => match(r, 3)).map(r => [
+                    data = raw.filter(r => match(r, 3)).map(r => [
                         r[0], fmtFull(r[1]), r[2], r[3], r[4], r[5], fmtFull(r[6]),
                         r[8] || "-", r[9] || "-", r[10] || "-", r[15] || "-" 
                     ]);
@@ -678,11 +679,13 @@
             };
             const ratingData = safeRatingData(sheetData);
 
+            // === 恢復為包含 22 欄的舊版 epHeaders 定義 ===
+            const epHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"70px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"100px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
+            
             const copyrightHeaders = [{render:()=><span>次數<span className="header-small">(無除夕)</span></span>,width:"50px"},{render:()=><span>唱過<span className="header-small">(無45轉)</span></span>,width:"70px"},{render:"歌名",width:"150px"},{render:"重製",width:"55px"},{render:"MPA",width:"55px"},{render:"首句歌詞",width:"160px"},{render:"原唱人",width:"70px"},{render:"連結",width:"60px"},{render:"特殊備註",width:"120px"},{render:"作詞人",width:"70px"},{render:()=><span>詞<br/>公權</span>,width:"55px"},{render:"詞重權",width:"70px"},{render:()=><span>詞<br/>百分比</span>,width:"55px"},{render:"作曲人",width:"70px"},{render:"曲公權",width:"55px"},{render:"曲重權",width:"70px"},{render:()=><span>曲<br/>百分比</span>,width:"55px"},{render:"編曲",width:"70px"}];
             const origSingerHeaders = [{render:"歌名",width:"150px"},{render:"重製",width:"55px"},{render:"MPA",width:"55px"},{render:"首句歌詞",width:"160px"},{render:"原唱人",width:"70px"},{render:"連結",width:"60px"},{render:"特殊備註",width:"120px"},{render:"作詞人",width:"70px"},{render:()=><span>詞<br/>公權</span>,width:"55px"},{render:"詞重權",width:"70px"},{render:()=><span>詞<br/>百分比</span>,width:"55px"},{render:"作曲人",width:"70px"},{render:"曲公權",width:"55px"},{render:"曲重權",width:"70px"},{render:()=><span>曲<br/>百分比</span>,width:"55px"},{render:"編曲",width:"70px"}];
             const specialHeaders = [{title:"次數",width:"50px"},{title:"歌名",width:"150px"},{title:"組曲",width:"40px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
             const singerListHeaders = [{title:"唱過",width:"50px"},{title:"日期",width:"80px"},{title:"歌手",width:"70px"},{title:"歌名",width:"150px"},{title:"原唱",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"180px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"}];
-            const epHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"70px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"全集",width:"60px"},{title:"分段",width:"60px"},{title:"純享",width:"60px"}];
             const singerSungHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"100px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"90px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"60px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"120px"}];
 
             const links = {
