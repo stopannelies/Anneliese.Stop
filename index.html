@@ -51,7 +51,6 @@
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
         .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         
-        /* 鎖定左側展開欄位的 CSS */
         .sticky-col-header { position: sticky; left: 0; z-index: 10; background-color: #F3F4F6; }
         .sticky-col { position: sticky; left: 0; z-index: 10; background-color: white; border-right: 1px solid #E2E8F0; }
         .result-table tr:hover .sticky-col { background-color: #FFF9E5; }
@@ -243,7 +242,8 @@
             );
         };
 
-        const expandedRecordedHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"歌名",width:"150px"},{title:"演唱者",width:"70px"},{title:"組曲",width:"40px"},{title:"錄影日期",width:"90px"},{title:"全集",width:"60px"},{title:"分段",width:"60px"},{title:"純享",width:"60px"}];
+        // 修正擴展面板 (已錄曲目) 的表頭描述，讓前 10 欄的標題能夠精準對應
+        const expandedRecordedHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"歌名",width:"150px"},{title:"演唱者",width:"70px"},{title:"組曲",width:"40px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"150px"}];
         const haojiHeaders = [{title:"位置",width:"80px"},{title:"歌名",width:"150px"},{title:"原唱人",width:"90px"},{title:"作詞人",width:"90px"},{title:"作曲人",width:"90px"},{title:"版權資訊",width:"140px"},{title:"首句歌詞",width:"160px"},{title:"備註",width:"100px"}];
 
         const UnifiedExpandedRow = ({ originalData }) => {
@@ -259,10 +259,9 @@
                 .filter(Boolean);
             const unsungSingersText = [...new Set(unsungSingers)].join(".");
             
-            // 若無未唱名單，則不顯示整個歌單區塊
             const shouldShowSongList = originalData.songList.length > 0 && unsungSingersText.trim() !== "";
 
-            // 只取前 10 欄進行顯示，把第 11 欄(原唱)過濾掉
+            // 擷取前 10 欄用於展開預覽
             const processedRecorded = originalData.recorded.map(r => {
                 const row = Array.isArray(r) ? [...r] : [...r.cells];
                 while(row.length < 10) row.push("-");
@@ -270,7 +269,11 @@
             });
 
             return (
-                <div className="flex flex-col gap-4 p-4 pl-5 border-l-4 border-orange-400 m-2 shadow-sm rounded-r bg-white">
+                <div className="flex flex-col gap-4 p-4 pl-5 border-l-4 border-orange-400 bg-orange-50/30 m-2 shadow-sm rounded-r">
+                    <div className="text-sm font-normal text-gray-500 border-b border-orange-200 pb-2 flex items-center gap-2">
+                        <i className="fas fa-link text-orange-400"></i> 「{originalData.songName}」的詳細關聯資料
+                    </div>
+
                     <div className="flex flex-col gap-4 items-start w-max max-w-full">
                         {processedRecorded.length > 0 && (
                             <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden overflow-x-auto w-max max-w-full">
@@ -289,25 +292,38 @@
                                 <table className="result-table text-left border-collapse" style={{ width: 'max-content' }}>
                                     <thead>
                                         <tr>
-                                            <th style={{ width: '150px' }} className="bg-gray-100 text-center">開過未唱過</th>
+                                            <th style={{ width: '150px' }} className="bg-gray-100 text-center">未唱過之歌手</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
                                             <td className="text-center font-bold text-blue-700 bg-blue-50/50 p-2 hover:bg-blue-100 transition-colors">
-                                                {unsungSingersText}
+                                                {unsungSingersText || <span className="text-gray-400 font-normal">無 / 皆已唱過</span>}
                                             </td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
                         )}
+
+                        {originalData.haoji.length > 0 && (
+                            <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden overflow-x-auto w-max max-w-full">
+                                <div className="bg-purple-100 px-3 py-1.5 font-bold text-purple-800 text-sm flex items-center gap-2 border-b border-purple-200">
+                                    <i className="fas fa-compact-disc"></i> 豪記資料 <span className="bg-purple-600 text-white text-xs px-2 rounded-full ml-auto">{originalData.haoji.length}</span>
+                                </div>
+                                <ResultTable headers={haojiHeaders} data={originalData.haoji} enableCopy={false} exactWidth={true} />
+                            </div>
+                        )}
+
+                        {processedRecorded.length === 0 && !shouldShowSongList && originalData.haoji.length === 0 && (
+                            <div className="text-gray-400 text-sm italic py-2">無其他詳細關聯資料。</div>
+                        )}
                     </div>
                 </div>
             );
         };
 
-        // --- 將搜尋邏輯移至前端 (Client-Side Search) 極速版 ---
+        // 將極速版前端的對應邏輯，徹底替換為與您舊版 backend 完全一致的擷取規則！
         const handleSearchMemory = (db, type, q1, opt) => {
             const k1 = q1 ? q1.toString().toLowerCase().trim() : "";
             if (!k1 && type !== 'special') return []; 
@@ -366,19 +382,21 @@
                     return [r[0], newR1, r[2], r[3], r[4], info?info.r:"", info?info.m:"", info?info.l:"", info?info.o:"", info?info.k:"", info?info.n:""];
                 });
             }
-            // === 修復：將 ep 的表頭與資料陣列長度恢復成原本完整的設計 ===
+            // ================= 修正核心區塊 =================
+            // 此處恢復為舊版邏輯：跳過 7, 8, 9, 10, 11，抽出完整的 22 欄資料，使其完美對應 epHeaders。
             else if (type === 'ep' || type === 'recorded') {
                 const raw = db.epInfo_B_AB;
                 if (type === 'ep') {
                     data = raw.filter(r => r[0] && r[0].toString().includes(k1)).map(r => [
                         r[0], fmtFull(r[1]), r[2], r[3], r[4], r[5], fmtFull(r[6]),
-                        r[7], r[8], r[9], r[10], r[11], r[12], r[13], r[14], r[15],
-                        r[16], r[17], r[18], r[19], r[20], r[21]
+                        r[12], r[13], r[14], r[15], r[16], r[17],
+                        r[18], r[19], r[20], r[21], r[22], r[23], r[24], r[25], r[26]
                     ]);
                 } else {
                     data = raw.filter(r => match(r, 3)).map(r => [
                         r[0], fmtFull(r[1]), r[2], r[3], r[4], r[5], fmtFull(r[6]),
-                        r[8] || "-", r[9] || "-", r[10] || "-", r[15] || "-" 
+                        r[12], r[13], r[14], r[15], r[16], r[17],
+                        r[18], r[19], r[20], r[21], r[22], r[23], r[24], r[25], r[26]
                     ]);
                 }
             }
@@ -436,7 +454,6 @@
                 const c1 = (s1 || "").toString().replace(/[\s\-]/g, '').toLowerCase(); 
                 const c2 = (s2 || "").toString().replace(/[\s\-]/g, '').toLowerCase();
                 
-                // 嚴格比對：雙方皆空白才相符
                 if (!c1 && !c2) return true; 
                 if (!c1 || !c2) return false;
                 
@@ -445,8 +462,11 @@
                 return false;
             };
 
+            const processedSongNames = new Set();
+
             copyrightData.forEach(row => {
                 const songName = getText(row[2]).trim();
+                processedSongNames.add(songName);
                 const origSinger = getText(row[6]).trim();
 
                 const recs = recData.filter(r => {
@@ -466,9 +486,28 @@
                     songName: songName,
                     recorded: recs,
                     songList: lists,
-                    hasDetails: recs.length > 0 || lists.length > 0 
+                    haoji: (allData.haoji || []).filter(r => getText(r[1]).trim() === songName),
+                    hasDetails: true
                 });
             });
+
+            (allData.haoji || []).forEach(hRow => {
+                const songName = getText(hRow[1]).trim();
+                if (!processedSongNames.has(songName)) {
+                    processedSongNames.add(songName);
+                    const copyrightRow = ["-", "-", songName, "豪記", "無收費", getText(hRow[6]), getText(hRow[2]), "", "【無版權底檔】", getText(hRow[3]), "-", "-", "-", getText(hRow[4]), "-", "-", "-", "-"];
+                    
+                    mergedResults.push({
+                        cells: copyrightRow,
+                        songName: songName,
+                        recorded: recData.filter(r => getText(r[3]).trim() === songName),
+                        songList: listData.filter(r => getText(r[3]).trim() === songName),
+                        haoji: [hRow],
+                        hasDetails: true
+                    });
+                }
+            });
+
             return mergedResults;
         };
 
@@ -493,7 +532,6 @@
                 setLoading(true);
                 setError(null);
                 
-                // 延遲 10ms 以利 UI 顯示 Loading 動畫
                 setTimeout(() => {
                     try {
                         let res = handleSearchMemory(fullDB, type, q, option);
@@ -518,7 +556,7 @@
                     <input type="text" value={hook.term} onChange={(e)=>hook.setTerm(e.target.value)} placeholder="請輸入歌名查詢綜合資料" className="flex-1 border-2 border-orange-300 rounded px-3 py-2 focus:outline-none focus:border-orange-500 transition-colors bg-orange-50/30" />
                     <button type="submit" disabled={hook.loading} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-4 py-2 rounded shadow transition-colors">{hook.loading?'...':'查詢'}</button>
                 </form>
-                <div className="text-gray-400 text-xs mb-2">一鍵查詢版權、已錄曲目、歌單資料。避開台語字。</div>
+                <div className="text-gray-400 text-xs mb-2">一鍵查詢版權、已錄曲目、歌單、豪記資料。避開台語字。</div>
                 {hook.error && <div className="text-red-600 bg-red-50 p-2 rounded border border-red-200 text-sm mb-2 font-bold"><i className="fas fa-exclamation-circle mr-1"></i>{hook.error}</div>}
                 {hook.results && (hook.results.length > 0 ? (
                     <ResultTable 
@@ -592,14 +630,12 @@
             const [isLoadingInfo, setIsLoadingInfo] = useState(true);
             const [apiError, setApiError] = useState(null);
             
-            // --- 加入 Client-Side Database 狀態 ---
             const [fullDB, setFullDB] = useState(null);
             const [isDbLoading, setIsDbLoading] = useState(false);
             
             const embeddedSites = [{ title: "TMCA", url: "https://www.tmca.tw/Home/Search", scale: 0.85 }, { title: "ACMA", url: "https://www.acma.org.tw/blank-7", scale: 0.65 }];
             
             useEffect(() => {
-                // 1. 取得面版資料 (極速)
                 fetch(`${API_URL}?op=info`)
                 .then(res => res.text())
                 .then(text => {
@@ -619,7 +655,6 @@
                     setIsLoadingInfo(false);
                 });
 
-                // 2. 靜默取得全部資料庫 (背景下載 JSON)
                 setIsDbLoading(true);
                 fetch(`${API_URL}?op=getDB`, { redirect: "follow" })
                 .then(res => res.text())
@@ -632,8 +667,7 @@
                             setFullDB(data);
                         }
                     } catch (e) {
-                        console.error("DB Fetch Parse Error: Backend returned non-JSON.", e);
-                        console.error("Response preview:", text.substring(0, 150));
+                        console.error("DB Fetch Parse Error:", e);
                     }
                     setIsDbLoading(false);
                 })
@@ -679,25 +713,26 @@
             };
             const ratingData = safeRatingData(sheetData);
 
-            // === 恢復為包含 22 欄的舊版 epHeaders 定義 ===
-            const epHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"70px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"100px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
-            
+            // ================= 修正表頭變數定義區 =================
             const copyrightHeaders = [{render:()=><span>次數<span className="header-small">(無除夕)</span></span>,width:"50px"},{render:()=><span>唱過<span className="header-small">(無45轉)</span></span>,width:"70px"},{render:"歌名",width:"150px"},{render:"重製",width:"55px"},{render:"MPA",width:"55px"},{render:"首句歌詞",width:"160px"},{render:"原唱人",width:"70px"},{render:"連結",width:"60px"},{render:"特殊備註",width:"120px"},{render:"作詞人",width:"70px"},{render:()=><span>詞<br/>公權</span>,width:"55px"},{render:"詞重權",width:"70px"},{render:()=><span>詞<br/>百分比</span>,width:"55px"},{render:"作曲人",width:"70px"},{render:"曲公權",width:"55px"},{render:"曲重權",width:"70px"},{render:()=><span>曲<br/>百分比</span>,width:"55px"},{render:"編曲",width:"70px"}];
             const origSingerHeaders = [{render:"歌名",width:"150px"},{render:"重製",width:"55px"},{render:"MPA",width:"55px"},{render:"首句歌詞",width:"160px"},{render:"原唱人",width:"70px"},{render:"連結",width:"60px"},{render:"特殊備註",width:"120px"},{render:"作詞人",width:"70px"},{render:()=><span>詞<br/>公權</span>,width:"55px"},{render:"詞重權",width:"70px"},{render:()=><span>詞<br/>百分比</span>,width:"55px"},{render:"作曲人",width:"70px"},{render:"曲公權",width:"55px"},{render:"曲重權",width:"70px"},{render:()=><span>曲<br/>百分比</span>,width:"55px"},{render:"編曲",width:"70px"}];
             const specialHeaders = [{title:"次數",width:"50px"},{title:"歌名",width:"150px"},{title:"組曲",width:"40px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
             const singerListHeaders = [{title:"唱過",width:"50px"},{title:"日期",width:"80px"},{title:"歌手",width:"70px"},{title:"歌名",width:"150px"},{title:"原唱",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"55px"},{title:"首句歌詞",width:"180px"},{title:"原唱人",width:"70px"},{title:"連結",width:"60px"},{title:"特殊備註",width:"120px"}];
+            
+            // 已恢復 22 欄的完整標題對應 (確保集數查詢的欄位與內容完全一致)
+            const epHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"150px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"70px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"55px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"100px"},{title:"作詞人",width:"70px"},{title:"詞公權",width:"55px"},{title:"詞重權",width:"70px"},{title:"詞百分比",width:"55px"},{title:"作曲人",width:"70px"},{title:"曲公權",width:"55px"},{title:"曲重權",width:"70px"},{title:"曲百分比",width:"55px"},{title:"編曲",width:"70px"}];
+            
             const singerSungHeaders = [{title:"集數",width:"50px"},{title:"播出日期",width:"90px"},{title:"單元",width:"100px"},{title:"曲目",width:"150px"},{title:"演唱者",width:"90px"},{title:"組曲",width:"50px"},{title:"錄影日期",width:"90px"},{title:"重製",width:"60px"},{title:"MPA",width:"70px"},{title:"首句歌詞",width:"160px"},{title:"原唱人",width:"90px"},{title:"連結",width:"70px"},{title:"特殊備註",width:"120px"}];
 
             const links = {
                 download: { authPublic: "https://docs.google.com/document/d/1clnHPqpcsxw1eZromz-LdavIyeA5jUKDGxia8Tg2Bk4/export?format=docx", authRemake: "https://docs.google.com/document/d/18D2Lp3wE2C5gFXDbqT7FvNc2sZn4nTojsKDGM-rY4GE/export?format=docx", authPaidRemake: "https://drive.google.com/drive/folders/1s2EBcyseMHUNNR4kOaF8G1zdBrG5JxA3?usp=sharing" },
                 program: { schedule: "https://docs.google.com/spreadsheets/d/1WULc6ENn4a6_VolJX_1rMjKnRbNzf3SwPRr7geLXnCQ/edit?gid=580247079#gid=580247079", icebing: "https://docs.google.com/spreadsheets/u/0/d/1lQcpINzgcsEWdl-PZpUTxpiFA90KE6DnN_70xFwl8fk/edit" },
                 copyright: { member: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=1616151799#gid=1616151799", mpa: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1591903723#gid=1591903723", querySource: "https://docs.google.com/spreadsheets/d/1KxHAmz57FOu8ti8l_Zd96lrwCfO5wexPRV0jsvNaVGA/edit?gid=0#gid=0", must: "https://www.must.org.tw/tw/chinese_musical/02.aspx", origQuerySource: "https://docs.google.com/spreadsheets/d/1picJxZ8ue9DM7EHS86TdVAHdr-Qty0nd5eEMvOXCUIY/edit?gid=348730547#gid=348730547" },
-                others: { singerListSource: "https://docs.google.com/spreadsheets/d/1mt4dVA3_VmqzyKjf0jbmYQMzJl0sef4G2hcqve7KDQ0/edit?gid=530920512#gid=530920512", epQuerySource: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=0#gid=0", recordedQuerySource: "https://docs.google.com/spreadsheets/d/1vglQpFQ5Ikpk9BWTnnmQR396zKkFRuro97SoA_xNuns/edit?gid=0#gid=0", singerSungQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=399230212#gid=399230212", haojiQuerySource: "https://docs.google.com/spreadsheets/d/1BiIWEn1Yh22nOZM_z-HFyNryX_AsjmjnH366VUDRuPg/edit?gid=829761523#gid=829761523", haojiQuery: "#" }
+                others: { singerListSource: "https://docs.google.com/spreadsheets/d/1mt4dVA3_VmqzyKjf0jbmYQMzJl0sef4G2hcqve7KDQ0/edit?gid=530920512#gid=530920512", epQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=622192856#gid=622192856", recordedQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=1872621493#gid=1872621493", singerSungQuerySource: "https://docs.google.com/spreadsheets/d/1KvUTxEF5Az-qhXaGnr-BzPFxO39s4se2Oi0-1ssADbM/edit?gid=399230212#gid=399230212", haojiQuerySource: "https://docs.google.com/spreadsheets/d/1BiIWEn1Yh22nOZM_z-HFyNryX_AsjmjnH366VUDRuPg/edit?gid=829761523#gid=829761523", haojiQuery: "#" }
             };
 
             const [panels, setPanels] = useState({unified:{visible:true,collapsed:false},singerList:{visible:false,collapsed:false},epQuery:{visible:false,collapsed:false},singerSungQuery:{visible:false,collapsed:false},origSingerQuery:{visible:false,collapsed:false},specialQuery:{visible:false,collapsed:false},haojiQuery:{visible:false,collapsed:false},webQuery:{visible:true,collapsed:true}});
 
-            // 替換原本的搜尋 Hook 為純本地高速查詢
             const unifiedSearch = useLocalSearch(fullDB, isDbLoading, 'unified', processUnifiedResults);
             const singerList = useLocalSearch(fullDB, isDbLoading, 'singerList'); 
             const epQuery = useLocalSearch(fullDB, isDbLoading, 'ep');
@@ -761,7 +796,6 @@
                                 {!panels.webQuery.collapsed && (<div className="p-2 flex flex-col gap-2"><div className="flex justify-start"><a href={links.copyright.must} target="_blank" className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3 py-1 rounded text-sm inline-flex items-center shadow transition-colors"><i className="fas fa-music mr-2"></i> 前往 MÜST 著作權協會查詢</a></div><div className="grid grid-cols-1 md:grid-cols-2 gap-2">{embeddedSites.map((site, index) => <WebBrowser key={index} title={site.title} url={site.url} scale={site.scale} />)}</div></div>)}
                             </div>
 
-                            {}
                             {panels.unified.visible && <div className="search-panel card-shadow border-orange-400 border-2"><div className="search-header p-3 flex justify-between items-center border-b border-orange-200 bg-orange-50"><div className="flex items-center gap-2"><i className="fas fa-search-plus text-orange-500 text-lg"></i><span className="font-bold text-orange-800">綜合歌名查詢 (版權 / 已錄 / 歌單)</span></div><div className="flex items-center gap-3"><a href={links.copyright.querySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>簡易版搜尋</a><button onClick={()=>togglePanelCollapse('unified')} className="w-6 h-6 rounded-full hover:bg-orange-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.unified.collapsed ? 'down' : 'up'} text-orange-500`}></i></button></div></div>{!panels.unified.collapsed && <div className="p-4 bg-white"><UnifiedSearchBlock hook={unifiedSearch} label="輸入歌名" headers={copyrightHeaders} enableCopy={true} remakeColIndex={3} mpaColIndex={4} /></div>}</div>}
                             
                             {panels.haojiQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-compact-disc text-blue-500"></i><span>豪記查詢</span></div><div className="flex items-center gap-3"><a href={links.others.haojiQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('haojiQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.haojiQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.haojiQuery.collapsed && <SimpleSearchPanel hook={haojiQuery} placeholder="請輸入豪記歌名..." headers={haojiHeaders} enableCopy={true} defaultColumnSelection="none" exactWidth={true} />}</div>}
