@@ -11,7 +11,6 @@
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7.23.6/babel.min.js"></script>
-    <!-- 加入 localforage 用於 IndexedDB 離線快取 -->
     <script src="https://unpkg.com/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -100,15 +99,32 @@
             return str;
         };
 
+        // 為陣列注入唯一ID以解決 React Key 錯亂問題
+        const injectUID = (dataArray) => {
+            return dataArray.map(item => {
+                if (!item._uid) {
+                    Object.defineProperty(item, '_uid', { 
+                        value: window.crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 10), 
+                        enumerable: false, writable: false 
+                    });
+                }
+                return item;
+            });
+        };
+
         const ResultTable = ({ headers, data, enableCopy, remakeColIndex, mpaColIndex, medleyColIndex, enableRowSelection, hiddenColumnsInCopy, defaultColumnSelection, expandedRowRender, isRowExpandable, autoWidth, exactWidth }) => {
             const [copyMode, setCopyMode] = useState(false);
             const [selectedCols, setSelectedCols] = useState([]);
-            const [selectedRows, setSelectedRows] = useState(new Set());
+            const [selectedRows, setSelectedRows] = useState(new Set()); // 現在儲存 _uid
             const [showToast, setShowToast] = useState(false);
             const [filterRemake, setFilterRemake] = useState(false);
             const [filterMedley, setFilterMedley] = useState(false);
             const [popup, setPopup] = useState(null);
-            const [expandedRows, setExpandedRows] = useState(new Set());
+            const [expandedRows, setExpandedRows] = useState(new Set()); // 現在儲存 _uid
+            
+            // 分頁狀態 (解決大量資料導致畫面凍結的問題)
+            const [currentPage, setCurrentPage] = useState(1);
+            const rowsPerPage = 50;
 
             useEffect(() => {
                 if (copyMode) {
@@ -129,10 +145,15 @@
                 });
             }, [data, filterRemake, remakeColIndex, filterMedley, medleyColIndex]);
 
+            // 當資料或過濾條件改變時，回到第一頁
+            useEffect(() => {
+                setCurrentPage(1);
+            }, [data, filterRemake, filterMedley]);
+
             const handleCopy = useCallback(() => {
                 let filteredData = getFilteredData();
                 if (copyMode && enableRowSelection && selectedRows.size > 0) {
-                    filteredData = filteredData.filter((_, index) => selectedRows.has(index));
+                    filteredData = filteredData.filter(row => selectedRows.has(row._uid));
                 }
                 if (filteredData.length === 0 || selectedCols.length === 0) return;
                 const text = filteredData.map(row => {
@@ -143,8 +164,8 @@
             }, [copyMode, enableRowSelection, selectedRows, selectedCols, getFilteredData]);
 
             const toggleCol = (idx) => setSelectedCols(prev => prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]);
-            const toggleRow = (idx) => setSelectedRows(prev => { const newSet = new Set(prev); if (newSet.has(idx)) newSet.delete(idx); else newSet.add(idx); return newSet; });
-            const toggleRowExpand = (idx) => setExpandedRows(prev => { const newSet = new Set(prev); if (newSet.has(idx)) newSet.delete(idx); else newSet.add(idx); return newSet; });
+            const toggleRow = (uid) => setSelectedRows(prev => { const newSet = new Set(prev); if (newSet.has(uid)) newSet.delete(uid); else newSet.add(uid); return newSet; });
+            const toggleRowExpand = (uid) => setExpandedRows(prev => { const newSet = new Set(prev); if (newSet.has(uid)) newSet.delete(uid); else newSet.add(uid); return newSet; });
             const selectAllCols = () => setSelectedCols(headers.map((_, i) => i).filter(i => !(hiddenColumnsInCopy || []).includes(i)));
             const selectNoCols = () => setSelectedCols([]);
             
@@ -160,6 +181,8 @@
             };
             
             const displayData = getFilteredData();
+            const totalPages = Math.ceil(displayData.length / rowsPerPage);
+            const paginatedData = displayData.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
             const handleCellClick = (e, cellData, isLink) => {
                 if (isLink || copyMode) return;
@@ -174,42 +197,43 @@
             useEffect(() => { const closePopup = () => setPopup(null); if (popup) document.addEventListener('click', closePopup); return () => document.removeEventListener('click', closePopup); }, [popup]);
 
             return (
-                <div className="relative">
+                <div className="relative flex flex-col h-full">
                     {enableCopy && (
                         <div className="flex justify-between items-center mb-2">
                              <div className="flex gap-2">{copyMode && (<><button onClick={selectAllCols} type="button" className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-1 rounded">全選</button><button onClick={selectNoCols} type="button" className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded">全不選</button></>)}</div>
                              <div className="flex gap-2">{!copyMode ? (<button onClick={() => setCopyMode(true)} type="button" className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded border border-gray-300 flex items-center"><i className="fas fa-clipboard mr-1"></i> 複製</button>) : (<><button onClick={handleCopy} type="button" className="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded shadow flex items-center"><i className="fas fa-check mr-1"></i> 確認複製</button><button onClick={() => setCopyMode(false)} type="button" className="text-xs bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded shadow flex items-center"><i className="fas fa-times mr-1"></i> 取消</button></>)}</div>
                         </div>
                     )}
-                    <div className="overflow-x-auto border border-gray-200 rounded">
+                    <div className="overflow-x-auto border border-gray-200 rounded flex-1">
                         <table className="result-table text-left border-collapse" style={getTableWidthStyle()}>
                             <thead>
                                 {copyMode && (<tr className="bg-gray-50 border-b border-gray-200">{expandedRowRender && <th className="w-8 sticky-col-header"></th>}{enableRowSelection && <th className="w-10 p-1"></th>}{headers.map((_, i) => { if (hiddenColumnsInCopy && hiddenColumnsInCopy.includes(i)) return null;
-                                return <th key={i} style={{width: headers[i].width}} className="text-center p-1"><input type="checkbox" checked={selectedCols.includes(i)} onChange={() => toggleCol(i)} className="cursor-pointer" /></th>;
+                                return <th key={`col-check-${i}`} style={{width: headers[i].width}} className="text-center p-1"><input type="checkbox" checked={selectedCols.includes(i)} onChange={() => toggleCol(i)} className="cursor-pointer" /></th>;
                                 })}</tr>)}
                                 <tr>
                                     {expandedRowRender && <th className="w-8 text-center bg-gray-100 sticky-col-header"></th>}
                                     {copyMode && enableRowSelection && <th className="w-10 text-center bg-gray-100"><i className="fas fa-check-square text-gray-400"></i></th>}
                                     {headers.map((h, i) => { 
                                         if (copyMode && hiddenColumnsInCopy && hiddenColumnsInCopy.includes(i)) return null; 
-                                        return (<th key={i} style={{width: h.width}}><div className="flex items-center justify-center gap-1">{typeof h.render === 'function' ? h.render() : (h.title || h.render)}{remakeColIndex === i && <button onClick={() => setFilterRemake(!filterRemake)} type="button" className={`ml-1 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${filterRemake ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}><i className="fas fa-filter text-xs"></i></button>}{medleyColIndex === i && <button onClick={() => setFilterMedley(!filterMedley)} type="button" className={`ml-1 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${filterMedley ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`} title="過濾45轉"><i className="fas fa-filter text-xs"></i></button>}</div></th>);
+                                        return (<th key={`header-${i}`} style={{width: h.width}}><div className="flex items-center justify-center gap-1">{typeof h.render === 'function' ? h.render() : (h.title || h.render)}{remakeColIndex === i && <button onClick={() => setFilterRemake(!filterRemake)} type="button" className={`ml-1 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${filterRemake ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`}><i className="fas fa-filter text-xs"></i></button>}{medleyColIndex === i && <button onClick={() => setFilterMedley(!filterMedley)} type="button" className={`ml-1 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${filterMedley ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'}`} title="過濾45轉"><i className="fas fa-filter text-xs"></i></button>}</div></th>);
                                 })}</tr>
                             </thead>
                             <tbody>
-                                {displayData.map((row, ri) => {
+                                {paginatedData.map((row, ri) => {
+                                    const uid = row._uid || ri; // 使用穩定 UID
                                     const rowData = Array.isArray(row) ? row : row.cells;
-                                    const isExpanded = expandedRows.has(ri);
+                                    const isExpanded = expandedRows.has(uid);
                                     const canExpand = isRowExpandable ? isRowExpandable(row) : true;
 
                                     return (
-                                        <React.Fragment key={ri}>
-                                            <tr className={`${copyMode && enableRowSelection && selectedRows.has(ri) ? "bg-blue-50" : ""} ${isExpanded ? "row-expanded" : ""}`}>
+                                        <React.Fragment key={uid}>
+                                            <tr className={`${copyMode && enableRowSelection && selectedRows.has(uid) ? "bg-blue-50" : ""} ${isExpanded ? "row-expanded" : ""}`}>
                                                 {expandedRowRender && (
-                                                    <td className={`text-center w-8 sticky-col ${canExpand ? 'cursor-pointer hover:bg-orange-100 transition-colors' : ''}`} onClick={(e) => { if(canExpand) { e.stopPropagation(); toggleRowExpand(ri); } }}>
+                                                    <td className={`text-center w-8 sticky-col ${canExpand ? 'cursor-pointer hover:bg-orange-100 transition-colors' : ''}`} onClick={(e) => { if(canExpand) { e.stopPropagation(); toggleRowExpand(uid); } }}>
                                                         {canExpand && <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'} text-orange-500`}></i>}
                                                     </td>
                                                 )}
-                                                {copyMode && enableRowSelection && (<td className="text-center border-r border-gray-200"><input type="checkbox" checked={selectedRows.has(ri)} onChange={() => toggleRow(ri)} className="cursor-pointer w-4 h-4" /></td>)}
+                                                {copyMode && enableRowSelection && (<td className="text-center border-r border-gray-200"><input type="checkbox" checked={selectedRows.has(uid)} onChange={() => toggleRow(uid)} className="cursor-pointer w-4 h-4" /></td>)}
                                                 {rowData.map((c, ci) => { 
                                                     if (copyMode && hiddenColumnsInCopy && hiddenColumnsInCopy.includes(ci)) return null; 
                                                     const displayContent = (c && typeof c === 'object' && c.t) ? c.t : c;
@@ -219,7 +243,7 @@
                                                     const isLink = (typeof displayContent === 'string' && displayContent.startsWith('http')); 
                                                     
                                                     return (
-                                                        <td key={ci} className={`${styleClass} cursor-pointer hover:bg-yellow-50 transition-colors`} onClick={(e) => { e.stopPropagation(); handleCellClick(e, c, isLink); }}>
+                                                        <td key={`cell-${uid}-${ci}`} className={`${styleClass} cursor-pointer hover:bg-yellow-50 transition-colors`} onClick={(e) => { e.stopPropagation(); handleCellClick(e, c, isLink); }}>
                                                             {isLink ? <a href={displayContent} target="_blank" rel="noopener noreferrer" className="link-cell"><i className="fas fa-link mr-1 text-xs"></i>連結</a> : displayContent}
                                                         </td>
                                                     );
@@ -238,6 +262,16 @@
                             </tbody>
                         </table>
                     </div>
+                    
+                    {/* 分頁控制項 */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center items-center gap-4 mt-3 p-2 bg-gray-50 border border-gray-200 rounded">
+                            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-100 disabled:opacity-40 text-sm font-bold text-gray-700 transition-colors"><i className="fas fa-chevron-left mr-1"></i> 上一頁</button>
+                            <span className="text-sm font-bold text-gray-600">第 {currentPage} / {totalPages} 頁 <span className="font-normal text-xs ml-1">(共 {displayData.length} 筆)</span></span>
+                            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-100 disabled:opacity-40 text-sm font-bold text-gray-700 transition-colors">下一頁 <i className="fas fa-chevron-right ml-1"></i></button>
+                        </div>
+                    )}
+
                     <div className={`toast ${showToast ? 'show' : ''}`}>已複製</div>
                     {popup && (<div className="cell-popup animate-pulse" style={{ top: popup.y, left: popup.x, animation: 'none' }} onClick={(e) => e.stopPropagation()}><button onClick={() => setPopup(null)} className="absolute -top-2 -right-2 bg-gray-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow hover:bg-gray-600 focus:outline-none"><i className="fas fa-times"></i></button>{popup.content}</div>)}
                 </div>
@@ -276,7 +310,7 @@
                                 <div className="bg-green-100 px-3 py-1.5 font-bold text-green-800 text-sm flex items-center gap-2 border-b border-green-200">
                                     <i className="fas fa-check-circle"></i> 已錄曲目紀錄 <span className="bg-green-600 text-white text-xs px-2 rounded-full ml-auto">{processedRecorded.length}</span>
                                 </div>
-                                <ResultTable headers={expandedRecordedHeaders} data={processedRecorded} enableCopy={false} exactWidth={true} />
+                                <ResultTable headers={expandedRecordedHeaders} data={injectUID(processedRecorded)} enableCopy={false} exactWidth={true} />
                             </div>
                         )}
 
@@ -307,7 +341,7 @@
                                 <div className="bg-purple-100 px-3 py-1.5 font-bold text-purple-800 text-sm flex items-center gap-2 border-b border-purple-200">
                                     <i className="fas fa-compact-disc"></i> 豪記資料 <span className="bg-purple-600 text-white text-xs px-2 rounded-full ml-auto">{originalData.haoji.length}</span>
                                 </div>
-                                <ResultTable headers={haojiHeaders} data={originalData.haoji} enableCopy={false} exactWidth={true} />
+                                <ResultTable headers={haojiHeaders} data={injectUID(originalData.haoji)} enableCopy={false} exactWidth={true} />
                             </div>
                         )}
                     </div>
@@ -500,19 +534,22 @@
                 setLoading(true);
                 setError(null);
                 
+                // 透過 setTimeout 讓 React 有時間渲染 Loading 狀態
                 setTimeout(() => {
                     try {
                         let res = handleSearchMemory(fullDB, type, q, option);
                         if (processUnified && type === 'unified') {
                             res = processUnified(res, q); 
                         }
+                        // 注入穩定 UID 以解決 React Key 錯亂
+                        res = injectUID(res);
                         setResults(res);
                     } catch(e) {
                         setError("查詢處理發生錯誤：" + e.message);
                     } finally {
                         setLoading(false);
                     }
-                }, 10);
+                }, 50);
             };
             return { term, setTerm, results, setResults, loading, error, search, clear };
         };
@@ -580,14 +617,22 @@
             const [refreshKey, setRefreshKey] = useState(0);
             return (
                 <div className="browser-frame-container card-shadow">
-                    <div className="browser-toolbar">
+                    <div className="browser-toolbar z-20 relative">
                         <div className="browser-title"><i className="fas fa-globe text-blue-500"></i> {title}</div>
                         <div className="browser-actions">
-                            <button onClick={() => window.open(url, '_blank')} className="browser-btn" title="跳出"><i className="fas fa-external-link-alt"></i></button>
+                            <button onClick={() => window.open(url, '_blank')} className="browser-btn" title="在新分頁開啟"><i className="fas fa-external-link-alt"></i></button>
                             <button onClick={() => setRefreshKey(prev => prev + 1)} className="browser-btn" title="重新整理"><i className="fas fa-sync-alt"></i></button>
                         </div>
                     </div>
-                    <div className="browser-content-wrapper"><iframe key={refreshKey} src={url} className="browser-iframe" style={{width:`${100/scale}%`, height:`${100/scale}%`, transform:`scale(${scale}) translate(-50%, 0)`, left: '50%', transformOrigin: 'top left'}} title={title} /></div>
+                    {/* 加入 Iframe 防呆提示 */}
+                    <div className="browser-content-wrapper relative bg-gray-50 flex items-center justify-center">
+                        <div className="text-center text-gray-400 absolute px-4 z-0 text-sm font-medium">
+                            <i className="fas fa-shield-alt text-2xl mb-2 opacity-50"></i><br/>
+                            若目標網站阻擋嵌入而呈現空白<br/>
+                            請點擊右上角 <i className="fas fa-external-link-alt mx-1"></i> 按鈕於新分頁開啟
+                        </div>
+                        <iframe key={refreshKey} src={url} className="browser-iframe relative z-10" style={{width:`${100/scale}%`, height:`${100/scale}%`, transform:`scale(${scale}) translate(-50%, 0)`, left: '50%', transformOrigin: 'top left'}} title={title} />
+                    </div>
                 </div>
             );
         };
@@ -604,7 +649,6 @@
             const embeddedSites = [{ title: "TMCA", url: "https://www.tmca.tw/Home/Search", scale: 0.85 }, { title: "ACMA", url: "https://www.acma.org.tw/blank-7", scale: 0.65 }];
             
             useEffect(() => {
-                // 1. 取得首頁面版資料 (極速)
                 fetch(`${API_URL}?op=info`)
                 .then(res => res.text())
                 .then(text => {
@@ -622,26 +666,29 @@
                     setIsLoadingInfo(false);
                 });
 
-                // 2. IndexedDB 混合快取資料庫載入流程
                 const loadDatabase = async () => {
                     setIsDbLoading(true);
                     try {
-                        // (A) 快速檢查後台最新版本號
                         const verRes = await fetch(`${API_URL}?op=checkVersion`);
                         const verData = await verRes.json();
-                        const serverVersion = verData.version;
+                        // 強化容錯：確保取到安全的字串版本號
+                        const serverVersion = (verData && verData.version) ? String(verData.version) : null;
 
-                        // (B) 讀取本地端 IndexedDB 快取
-                        const localDB = await localforage.getItem('Zongyi_DB_Cache');
+                        let localDB = null;
+                        try {
+                            localDB = await localforage.getItem('Zongyi_DB_Cache');
+                        } catch(e) {
+                            console.warn("讀取 IndexedDB 時發生錯誤", e);
+                        }
                         
-                        if (localDB && localDB.lastUpdate && localDB.lastUpdate.toString() === serverVersion) {
+                        // 安全比對本地與遠端版本
+                        if (serverVersion && localDB && localDB.lastUpdate && String(localDB.lastUpdate) === serverVersion) {
                             console.log("🚀 [Cache Hit] 從本地瀏覽器快取載入資料庫，無需消耗網路流量！");
                             setFullDB(localDB);
                             setIsDbLoading(false);
                             return;
                         }
 
-                        // (C) 如果過期或是第一次載入，則向 Google 請求龐大的 JSON
                         console.log("☁️ [Cache Miss] 快取過期或不存在，正在從伺服器下載最新資料庫...");
                         const dbRes = await fetch(`${API_URL}?op=getDB`, { redirect: "follow" });
                         const dbText = await dbRes.text();
@@ -651,9 +698,12 @@
                             console.error("DB Error:", dbData.error);
                         } else {
                             setFullDB(dbData);
-                            // 存入本地端供下次秒開使用
-                            await localforage.setItem('Zongyi_DB_Cache', dbData);
-                            console.log("✅ 成功下載並儲存至本地快取！");
+                            try {
+                                await localforage.setItem('Zongyi_DB_Cache', dbData);
+                                console.log("✅ 成功下載並儲存至本地快取！");
+                            } catch(e) {
+                                console.warn("儲存至 IndexedDB 時發生錯誤，可能是儲存空間不足或隱私模式限制", e);
+                            }
                         }
                     } catch (e) {
                         console.error("載入資料庫發生錯誤:", e);
