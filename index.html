@@ -136,8 +136,8 @@
                 }
                 if (filteredData.length === 0 || selectedCols.length === 0) return;
                 const text = filteredData.map(row => {
-                    const rowData = Array.isArray(row) ? row : row.cells;
-                    return rowData.filter((_, i) => selectedCols.includes(i)).map(cell => formatForExcel(cell)).join('\t')
+                    const rowData = Array.isArray(row) ? row : (row.cells || []);
+                    return rowData.filter((_, i) => selectedCols.includes(i)).map(cell => formatForExcel(cell)).join('\t');
                 }).join('\n');
                 navigator.clipboard.writeText(text).then(() => { setShowToast(true); setTimeout(() => setShowToast(false), 2000); setCopyMode(false); });
             }, [copyMode, enableRowSelection, selectedRows, selectedCols, getFilteredData]);
@@ -197,7 +197,7 @@
                             </thead>
                             <tbody>
                                 {displayData.map((row, ri) => {
-                                    const rowData = Array.isArray(row) ? row : row.cells;
+                                    const rowData = Array.isArray(row) ? row : (row.cells || []);
                                     const isExpanded = expandedRows.has(ri);
                                     const canExpand = isRowExpandable ? isRowExpandable(row) : true;
 
@@ -248,22 +248,22 @@
         const haojiHeaders = [{title:"位置",width:"80px"},{title:"歌名",width:"150px"},{title:"原唱人",width:"90px"},{title:"作詞人",width:"90px"},{title:"作曲人",width:"90px"},{title:"版權資訊",width:"140px"},{title:"首句歌詞",width:"160px"},{title:"備註",width:"100px"}];
 
         const UnifiedExpandedRow = ({ originalData }) => {
-            const unsungSingers = originalData.songList
+            const unsungSingers = (originalData.songList || [])
                 .filter(r => {
-                    const rowData = Array.isArray(r) ? r : r.cells;
+                    const rowData = Array.isArray(r) ? r : (r.cells || []);
                     return getText(rowData[0]).trim() === "";
                 })
                 .map(r => {
-                    const rowData = Array.isArray(r) ? r : r.cells;
+                    const rowData = Array.isArray(r) ? r : (r.cells || []);
                     return getText(rowData[2]).trim();
                 })
                 .filter(Boolean);
             const unsungSingersText = [...new Set(unsungSingers)].join(".");
             
-            const shouldShowSongList = originalData.songList.length > 0 && unsungSingersText.trim() !== "";
+            const shouldShowSongList = (originalData.songList || []).length > 0 && unsungSingersText.trim() !== "";
 
-            const processedRecorded = originalData.recorded.map(r => {
-                const row = Array.isArray(r) ? [...r] : [...r.cells];
+            const processedRecorded = (originalData.recorded || []).map(r => {
+                const row = Array.isArray(r) ? [...r] : [...(r.cells || [])];
                 while(row.length < 10) row.push("-");
                 return row.slice(0, 10);
             });
@@ -283,7 +283,7 @@
                         {shouldShowSongList && (
                             <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden overflow-x-auto w-max max-w-full">
                                 <div className="bg-blue-100 px-3 py-1.5 font-bold text-blue-800 text-sm flex items-center gap-2 border-b border-blue-200">
-                                    <i className="fas fa-list"></i> 歌單紀錄 <span className="bg-blue-600 text-white text-xs px-2 rounded-full ml-auto">{originalData.songList.length}</span>
+                                    <i className="fas fa-list"></i> 歌單紀錄 <span className="bg-blue-600 text-white text-xs px-2 rounded-full ml-auto">{(originalData.songList || []).length}</span>
                                 </div>
                                 <table className="result-table text-left border-collapse" style={{ width: 'max-content' }}>
                                     <thead>
@@ -302,10 +302,10 @@
                             </div>
                         )}
 
-                        {originalData.haoji.length > 0 && (
+                        {(originalData.haoji || []).length > 0 && (
                             <div className="bg-white rounded shadow-sm border border-gray-200 overflow-hidden overflow-x-auto w-max max-w-full">
                                 <div className="bg-purple-100 px-3 py-1.5 font-bold text-purple-800 text-sm flex items-center gap-2 border-b border-purple-200">
-                                    <i className="fas fa-compact-disc"></i> 豪記資料 <span className="bg-purple-600 text-white text-xs px-2 rounded-full ml-auto">{originalData.haoji.length}</span>
+                                    <i className="fas fa-compact-disc"></i> 豪記資料 <span className="bg-purple-600 text-white text-xs px-2 rounded-full ml-auto">{(originalData.haoji || []).length}</span>
                                 </div>
                                 <ResultTable headers={haojiHeaders} data={originalData.haoji} enableCopy={false} exactWidth={true} />
                             </div>
@@ -340,49 +340,50 @@
             }
 
             if (type === 'copyright') {
-                const hData = db.epSingers_A_Z;
+                const hData = db.epSingers_A_Z || [];
                 const hMap = new Map();
                 hData.forEach(r => {
-                    if (r[1]) hMap.set((r[1].toString() + "_" + (r[2]||"").toString()).replace(/\s/g, ""), { c: r[0], s: r[25] });
+                    if (r && r[1]) hMap.set((r[1].toString() + "_" + (r[2]||"").toString()).replace(/\s/g, ""), { c: r[0], s: r[25] });
                 });
                 
-                const sData = db.copyright_A_Q.map(r => r.slice(1)); 
+                const sData = (db.copyright_A_Q || []).map(r => r ? r.slice(1) : []); 
                 const res = sData.filter(r => match(r, 0));
                 data = res.map(r => {
-                    const k = (r[0].toString() + "_" + (r[4]||"").toString()).replace(/\s/g, "");
+                    const k = (r[0] ? r[0].toString() : "" + "_" + (r[4]||"").toString()).replace(/\s/g, "");
                     const h = hMap.get(k);
                     return [h ? h.c : "無", h ? h.s : "", ...r];
                 });
             }
             else if (type === 'singerList' || type === 'songList') {
-                const dRaw = db.copyright_A_Q.map(r => r.slice(1));
+                const dRaw = (db.copyright_A_Q || []).map(r => r ? r.slice(1) : []);
                 const dMap = new Map();
                 dRaw.forEach(r => {
-                    dMap.set((r[0].toString() + "_" + (r[4]||"").toString()).replace(/\s/g, ""), { r: r[1], m: r[2], l: r[3], o: r[4], k: r[5], n: r[6] });
+                    if (r && r[0]) dMap.set((r[0].toString() + "_" + (r[4]||"").toString()).replace(/\s/g, ""), { r: r[1], m: r[2], l: r[3], o: r[4], k: r[5], n: r[6] });
                 });
                 
-                const raw = db.singerList_A_E;
+                const raw = db.singerList_A_E || [];
                 const targetIdx = (type === 'songList') ? 3 : 2;
                 data = raw.filter(r => {
+                    if (!r) return false;
                     if (!match(r, targetIdx)) return false;
                     if (opt === true && r[0] && r[0].toString().trim() !== "") return false;
                     return true;
                 }).map(r => {
                     const newR1 = fmt(r[1]);
-                    const info = dMap.get((r[3].toString() + "_" + (r[4]||"").toString()).replace(/\s/g, ""));
+                    const info = dMap.get(((r[3]||"").toString() + "_" + (r[4]||"").toString()).replace(/\s/g, ""));
                     return [r[0], newR1, r[2], r[3], r[4], info?info.r:"", info?info.m:"", info?info.l:"", info?info.o:"", info?info.k:"", info?info.n:""];
                 });
             }
             else if (type === 'ep' || type === 'recorded') {
-                const raw = db.epInfo_B_AB;
+                const raw = db.epInfo_B_AB || [];
                 if (type === 'ep') {
-                    data = raw.filter(r => r[0] && r[0].toString().includes(k1)).map(r => [
+                    data = raw.filter(r => r && r[0] && r[0].toString().includes(k1)).map(r => [
                         r[0], fmtFull(r[1]), r[2], r[3], r[4], r[5], fmtFull(r[6]),
                         r[12], r[13], r[14], r[15], r[16], r[17],
                         r[18], r[19], r[20], r[21], r[22], r[23], r[24], r[25], r[26]
                     ]);
                 } else {
-                    data = raw.filter(r => match(r, 3)).map(r => [
+                    data = raw.filter(r => r && match(r, 3)).map(r => [
                         r[0], fmtFull(r[1]), r[2], r[3], r[4], r[5], fmtFull(r[6]),
                         r[12], r[13], r[14], r[15], r[16], r[17],
                         r[18], r[19], r[20], r[21], r[22], r[23], r[24], r[25], r[26]
@@ -390,8 +391,9 @@
                 }
             }
             else if (type === 'singerSung') {
-                const raw = db.epInfo_B_AB;
+                const raw = db.epInfo_B_AB || [];
                 data = raw.filter(r => {
+                    if (!r) return false;
                     const m = k1 ? (r[4] && r[4].toString().includes(k1)) : true;
                     return m && r[5] !== "45轉";
                 }).map(r => [
@@ -400,10 +402,10 @@
                 ]);
             }
             else if (type === 'special') {
-                const raw = db.epInfo_B_AB;
+                const raw = db.epInfo_B_AB || [];
                 const grouped = {};
                 raw.forEach(r => {
-                    if (r[5] === k1) { 
+                    if (r && r[5] === k1) { 
                         const key = ((r[3]||"") + "_" + (r[15]||"")).trim(); 
                         if (!grouped[key]) {
                             grouped[key] = { song: r[3], medley: r[5], others: [r[12], r[13], r[14], r[15], r[16], r[17], r[18], r[19], r[20], r[21], r[22], r[23], r[24], r[25], r[26]], singers: new Set(), count: 0 };
@@ -419,14 +421,14 @@
                 data.sort((a, b) => a[0] - b[0]);
             }
             else if (type === 'origSinger') {
-                const raw = db.copyright_A_Q;
-                data = raw.filter(r => match(r, 5)).map(r => [
+                const raw = db.copyright_A_Q || [];
+                data = raw.filter(r => r && match(r, 5)).map(r => [
                     r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10], r[11], r[12], r[13], r[14], r[15], r[16]
                 ]);
             }
             else if (type === 'haoji') {
-                const raw = db.haoji_B_M;
-                data = raw.filter(r => match(r, 1)).map(r => [
+                const raw = db.haoji_B_M || [];
+                data = raw.filter(r => r && match(r, 1)).map(r => [
                     r[0], r[1], r[2], r[4], r[5], r[6], r[9], r[10]
                 ]);
             }
@@ -472,8 +474,8 @@
                     songName: songName,
                     recorded: recs,
                     songList: lists,
-                    haoji: (allData.haoji || []).filter(r => getText(r[1]).trim() === songName),
-                    hasDetails: recs.length > 0 || lists.length > 0 || (allData.haoji || []).filter(r => getText(r[1]).trim() === songName).length > 0
+                    haoji: (allData.haoji || []).filter(r => r && getText(r[1]).trim() === songName),
+                    hasDetails: recs.length > 0 || lists.length > 0 || (allData.haoji || []).filter(r => r && getText(r[1]).trim() === songName).length > 0
                 });
             });
             return mergedResults;
@@ -593,7 +595,13 @@
         };
 
         const App = () => {
-            const API_URL = "https://script.google.com/macros/s/AKfycbzF7XVJK-rIoHBIQvEVF1c4AJJNR4x5f-wkqAaWwCLb9yMflTE3_c9MSEzwwglQQFTwYw/exec";
+            // ==========================================
+            // API 分離架構
+            // ==========================================
+            const API_URL_INFO = "https://script.google.com/macros/s/AKfycbzaH276QuJEcFRU0qslZviYuyJGEKVMAycuDNlWQq0q54E3eF14LB8CfmFDVfh_OvfP/exec";
+            const API_URL_DB = "https://script.google.com/macros/s/AKfycby0DDbY47y61pRONIMiTNnN4B_FSjagnKDfJ0BVYZSaOwBGa9u_9_I_PbaclMakco0CoQ/exec";
+            // ==========================================
+            
             const [sheetData, setSheetData] = useState(null);
             const [isLoadingInfo, setIsLoadingInfo] = useState(true);
             const [apiError, setApiError] = useState(null);
@@ -604,26 +612,28 @@
             const embeddedSites = [{ title: "TMCA", url: "https://www.tmca.tw/Home/Search", scale: 0.85 }, { title: "ACMA", url: "https://www.acma.org.tw/blank-7", scale: 0.65 }];
             
             useEffect(() => {
-                // 自動重試機制，加入明確超時處理並將時間拉長至 60 秒
                 const fetchWithRetry = async (url, options = {}, retries = 3, backoff = 1000, timeoutMs = 60000) => {
                     for (let i = 0; i < retries; i++) {
                         try {
                             const controller = new AbortController();
                             const id = setTimeout(() => {
-                                // 傳入中斷原因以避免 signal is aborted without reason，並相容舊版 API
-                                try { controller.abort(new Error("Request Timeout")); } 
-                                catch (_) { controller.abort(); }
+                                try { controller.abort(); } 
+                                catch (_) {}
                             }, timeoutMs);
-                            const response = await fetch(url, { ...options, signal: controller.signal });
+                            
+                            // 強制跟隨重導向 (解決 CORS/302 問題)
+                            const fetchOptions = { ...options, redirect: 'follow', signal: controller.signal };
+                            const response = await fetch(url, fetchOptions);
                             clearTimeout(id);
+                            
                             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                             return await response.text(); 
                         } catch (e) {
-                            const isAbort = e.name === 'AbortError' || e.message === 'Request Timeout';
+                            const isAbort = e && (e.name === 'AbortError' || e.message === 'Request Timeout');
                             if (i === retries - 1) {
                                 throw new Error(isAbort ? `連線逾時 (${timeoutMs/1000}秒)` : e.message);
                             }
-                            console.warn(`[嘗試重連 ${i + 1}/${retries}] 失敗原因: ${isAbort ? '連線逾時' : e.message}，準備等待重試...`);
+                            console.warn(`[嘗試重連 ${i + 1}/${retries}] 失敗原因: ${isAbort ? '連線逾時' : e.message}`);
                             await new Promise(resolve => setTimeout(resolve, backoff * (i + 1)));
                         }
                     }
@@ -631,12 +641,19 @@
 
                 const loadInfo = async () => {
                     try {
-                        const text = await fetchWithRetry(`${API_URL}?op=info`);
-                        const data = JSON.parse(text);
+                        const text = await fetchWithRetry(`${API_URL_INFO}?op=info`, { redirect: 'follow' });
+                        let data;
+                        try {
+                            data = JSON.parse(text);
+                        } catch (parseErr) {
+                            console.error("Info JSON 解析錯誤:", text.substring(0, 100));
+                            throw new Error("後端未回傳有效 JSON (請檢查 GAS 部署權限是否為「所有人」)");
+                        }
+                        
                         if (data.error) setApiError(data.error);
                         else setSheetData(data);
                     } catch (err) {
-                        setApiError("連線失敗，請稍後重試");
+                        setApiError(err.message || "輕量資訊連線失敗");
                     } finally {
                         setIsLoadingInfo(false);
                     }
@@ -645,46 +662,67 @@
                 const loadDatabase = async () => {
                     setIsDbLoading(true);
                     try {
-                        const localDB = await localforage.getItem('Zongyi_DB_Cache');
+                        let localDB = null;
+                        try {
+                            // 預防無痕模式或隱私設定封鎖 IndexedDB
+                            localDB = await localforage.getItem('Zongyi_DB_Cache');
+                        } catch (lfErr) {
+                            console.warn("無法讀取本地快取 (可能處於無痕模式):", lfErr);
+                        }
+                        
                         let serverVersion = null;
                         
                         try {
-                            const verText = await fetchWithRetry(`${API_URL}?op=checkVersion`, {}, 2, 1000);
-                            const verData = JSON.parse(verText);
+                            const verText = await fetchWithRetry(`${API_URL_DB}?op=checkVersion`, { redirect: 'follow' }, 2, 1000);
+                            let verData = JSON.parse(verText);
                             serverVersion = verData.version;
                         } catch (verErr) {
                             if (localDB) {
-                                console.log("☁️ 無法取得最新版本號，為避免無資料可用，強制使用本地快取");
+                                console.log("☁️ 無法取得最新版本號，強制使用本地快取");
                                 setFullDB(localDB);
                                 setIsDbLoading(false);
                                 return;
                             }
-                            throw verErr;
+                            throw new Error("取得版本號失敗，且無本地快取: " + verErr.message);
                         }
 
                         if (localDB && localDB.lastUpdate && localDB.lastUpdate.toString() === serverVersion) {
-                            console.log("🚀 [Cache Hit] 從本地瀏覽器快取載入資料庫，無需消耗網路流量！");
+                            console.log("🚀 [Cache Hit] 本地瀏覽器快取最新！");
                             setFullDB(localDB);
                             setIsDbLoading(false);
                             return;
                         }
 
-                        console.log("☁️ [Cache Miss] 快取過期或不存在，正在從伺服器下載最新資料庫...");
-                        const dbText = await fetchWithRetry(`${API_URL}?op=getDB`, { redirect: "follow" }, 3, 2000);
-                        const dbData = JSON.parse(dbText);
+                        console.log("☁️ [Cache Miss] 下載最新資料庫...");
+                        const dbText = await fetchWithRetry(`${API_URL_DB}?op=getDB`, { redirect: "follow" }, 3, 2000, 60000);
+                        
+                        let dbData;
+                        try {
+                            dbData = JSON.parse(dbText);
+                        } catch (parseErr) {
+                            console.error("DB JSON 解析錯誤:", dbText.substring(0, 100));
+                            throw new Error("資料庫解析異常 (請確認 GAS 權限為「所有人」)");
+                        }
                         
                         if (dbData.error) throw new Error(dbData.error);
                         
                         setFullDB(dbData);
-                        await localforage.setItem('Zongyi_DB_Cache', dbData);
-                        console.log("✅ 成功下載並儲存至本地快取！");
+                        try {
+                            await localforage.setItem('Zongyi_DB_Cache', dbData);
+                        } catch (lfErr) {
+                            console.warn("寫入本地快取失敗:", lfErr);
+                        }
                     } catch (e) {
-                        console.error("載入資料庫發生錯誤:", e);
-                        const fallbackDB = await localforage.getItem('Zongyi_DB_Cache');
+                        console.error("載入資料庫錯誤:", e);
+                        let fallbackDB = null;
+                        try {
+                            fallbackDB = await localforage.getItem('Zongyi_DB_Cache');
+                        } catch(e) {}
+                        
                         if (fallbackDB) {
                             setFullDB(fallbackDB);
                         } else {
-                            setApiError("資料庫載入失敗");
+                            setApiError(prev => prev ? prev + " | DB載入失敗" : "DB載入失敗: " + e.message);
                         }
                     } finally {
                         setIsDbLoading(false);
@@ -778,6 +816,7 @@
                     <div className="header-main text-center py-2 text-xl font-bold rounded-lg mb-3">綜藝👍級棒</div>
                     <div className="flex flex-col md:flex-row gap-3 items-start">
                         <div className="w-full md:w-[28%] flex flex-col gap-3">
+                            {apiError && <div className="bg-red-50 text-red-600 font-bold p-2 text-sm text-center border border-red-300 rounded shadow-sm break-all">{apiError}</div>}
                             <div className="bg-white rounded-lg overflow-hidden card-shadow"><div className="left-header-blue text-center font-bold py-1 text-sm tracking-wider">今日</div><div className="bg-white py-2 flex justify-center items-center gap-2">{isLoadingInfo?<span className="text-gray-400 animate-pulse">...</span>:<><span className="text-xl font-bold text-gray-800 font-compact">{infoData?.today?.date || '-'}</span><span className="text-lg font-medium text-gray-500 font-compact">{infoData?.today?.day || '-'}</span></>}</div><div className="left-header-blue text-center font-bold py-1 text-sm tracking-wider border-t border-white/20">下次錄影</div><div className="bg-white py-2 flex justify-center items-center gap-2">{isLoadingInfo?<span className="text-gray-400 animate-pulse">...</span>:<><span className="text-xl font-bold text-gray-800 font-compact">{infoData?.nextRecord?.date || '-'}</span><span className="text-lg font-medium text-gray-500 font-compact">{infoData?.nextRecord?.day || '-'}</span></>}</div><div className="left-header-blue text-center font-bold py-1 text-sm tracking-wider border-t border-white/20">剩餘天數</div><div className="bg-white py-2 text-center">{isLoadingInfo?<span className="text-gray-400 animate-pulse">-</span>:<span className="text-3xl font-bold text-gray-800 font-compact">{infoData?.nextRecord?.daysLeft || '-'}</span>}</div></div>
                             <div className="bg-white rounded-lg overflow-hidden card-shadow">{(infoData?.broadcast || []).map((item,idx)=>(<div key={idx} className="flex border-b last:border-0 border-gray-100"><div className="left-header-blue w-1/3 flex items-center justify-center text-xs font-bold p-2 whitespace-pre-line leading-relaxed">{item?.title || '-'}</div><div className="w-1/3 flex items-center justify-center font-bold text-base text-gray-700 border-r border-gray-100 bg-white">{item?.date || '-'}</div><div className="w-1/3 flex items-center justify-center text-gray-600 font-bold text-base bg-white">{item?.days || '-'}</div></div>))}</div>
                             <div className="bg-white rounded-lg overflow-hidden card-shadow text-center"><div className="left-sub-blue font-bold py-2 text-base">本週播出</div><div className="bg-white p-3 border-t border-gray-100"><div className="flex flex-row justify-center items-center gap-2"><span className="bg-gray-100 text-gray-800 px-2 py-0.5 rounded font-bold text-lg border border-gray-200">{infoData?.weekEp?.ep || '-'}</span><span className="font-bold text-gray-700 text-sm text-left">{infoData?.weekEp?.title || '-'}</span></div></div></div>
