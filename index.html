@@ -604,12 +604,12 @@
             const embeddedSites = [{ title: "TMCA", url: "https://www.tmca.tw/Home/Search", scale: 0.85 }, { title: "ACMA", url: "https://www.acma.org.tw/blank-7", scale: 0.65 }];
             
             useEffect(() => {
-                // 自動重試機制
-                const fetchWithRetry = async (url, options = {}, retries = 3, backoff = 1000) => {
+                // 自動重試機制，將超時時間 (timeoutMs) 從 15 秒拉長至 45 秒
+                const fetchWithRetry = async (url, options = {}, retries = 3, backoff = 1000, timeoutMs = 45000) => {
                     for (let i = 0; i < retries; i++) {
                         try {
                             const controller = new AbortController();
-                            const id = setTimeout(() => controller.abort(), 15000);
+                            const id = setTimeout(() => controller.abort(), timeoutMs);
                             const response = await fetch(url, { ...options, signal: controller.signal });
                             clearTimeout(id);
                             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
