@@ -604,36 +604,56 @@
             const embeddedSites = [{ title: "TMCA", url: "https://www.tmca.tw/Home/Search", scale: 0.85 }, { title: "ACMA", url: "https://www.acma.org.tw/blank-7", scale: 0.65 }];
             
             useEffect(() => {
-                // 1. 取得首頁面版資料 (極速)
-                fetch(`${API_URL}?op=info`)
-                .then(res => res.text())
-                .then(text => {
-                    try {
-                        const data = JSON.parse(text);
-                        if(data.error) setApiError(data.error);
-                        else setSheetData(data);
-                    } catch (e) {
-                        setApiError("後端異常或無權限");
+                // 自動重試機制
+                const fetchWithRetry = async (url, options = {}, retries = 3, backoff = 1000) => {
+                    for (let i = 0; i < retries; i++) {
+                        try {
+                            const controller = new AbortController();
+                            const id = setTimeout(() => controller.abort(), 15000);
+                            const response = await fetch(url, { ...options, signal: controller.signal });
+                            clearTimeout(id);
+                            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                            return await response.text(); 
+                        } catch (e) {
+                            if (i === retries - 1) throw e;
+                            await new Promise(resolve => setTimeout(resolve, backoff * (i + 1)));
+                        }
                     }
-                    setIsLoadingInfo(false);
-                })
-                .catch(err => {
-                    setApiError("連線失敗");
-                    setIsLoadingInfo(false);
-                });
+                };
 
-                // 2. IndexedDB 混合快取資料庫載入流程
+                const loadInfo = async () => {
+                    try {
+                        const text = await fetchWithRetry(`${API_URL}?op=info`);
+                        const data = JSON.parse(text);
+                        if (data.error) setApiError(data.error);
+                        else setSheetData(data);
+                    } catch (err) {
+                        setApiError("連線失敗，請稍後重試");
+                    } finally {
+                        setIsLoadingInfo(false);
+                    }
+                };
+
                 const loadDatabase = async () => {
                     setIsDbLoading(true);
                     try {
-                        // (A) 快速檢查後台最新版本號
-                        const verRes = await fetch(`${API_URL}?op=checkVersion`);
-                        const verData = await verRes.json();
-                        const serverVersion = verData.version;
-
-                        // (B) 讀取本地端 IndexedDB 快取
                         const localDB = await localforage.getItem('Zongyi_DB_Cache');
+                        let serverVersion = null;
                         
+                        try {
+                            const verText = await fetchWithRetry(`${API_URL}?op=checkVersion`, {}, 2, 1000);
+                            const verData = JSON.parse(verText);
+                            serverVersion = verData.version;
+                        } catch (verErr) {
+                            if (localDB) {
+                                console.log("☁️ 無法取得最新版本號，為避免無資料可用，強制使用本地快取");
+                                setFullDB(localDB);
+                                setIsDbLoading(false);
+                                return;
+                            }
+                            throw verErr;
+                        }
+
                         if (localDB && localDB.lastUpdate && localDB.lastUpdate.toString() === serverVersion) {
                             console.log("🚀 [Cache Hit] 從本地瀏覽器快取載入資料庫，無需消耗網路流量！");
                             setFullDB(localDB);
@@ -641,26 +661,29 @@
                             return;
                         }
 
-                        // (C) 如果過期或是第一次載入，則向 Google 請求龐大的 JSON
                         console.log("☁️ [Cache Miss] 快取過期或不存在，正在從伺服器下載最新資料庫...");
-                        const dbRes = await fetch(`${API_URL}?op=getDB`, { redirect: "follow" });
-                        const dbText = await dbRes.text();
+                        const dbText = await fetchWithRetry(`${API_URL}?op=getDB`, { redirect: "follow" }, 3, 2000);
                         const dbData = JSON.parse(dbText);
-
-                        if (dbData.error) {
-                            console.error("DB Error:", dbData.error);
-                        } else {
-                            setFullDB(dbData);
-                            // 存入本地端供下次秒開使用
-                            await localforage.setItem('Zongyi_DB_Cache', dbData);
-                            console.log("✅ 成功下載並儲存至本地快取！");
-                        }
+                        
+                        if (dbData.error) throw new Error(dbData.error);
+                        
+                        setFullDB(dbData);
+                        await localforage.setItem('Zongyi_DB_Cache', dbData);
+                        console.log("✅ 成功下載並儲存至本地快取！");
                     } catch (e) {
                         console.error("載入資料庫發生錯誤:", e);
+                        const fallbackDB = await localforage.getItem('Zongyi_DB_Cache');
+                        if (fallbackDB) {
+                            setFullDB(fallbackDB);
+                        } else {
+                            setApiError("資料庫載入失敗");
+                        }
+                    } finally {
+                        setIsDbLoading(false);
                     }
-                    setIsDbLoading(false);
                 };
 
+                loadInfo();
                 loadDatabase();
             }, []);
 
