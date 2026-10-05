@@ -14,6 +14,7 @@
     <script src="https://unpkg.com/localforage@1.10.0/dist/localforage.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
         body { font-family: 'Noto Sans TC', sans-serif; background-color: #FCFAF2; color: #2D3436; padding-bottom: 80px; }
@@ -263,7 +264,7 @@
                         </table>
                     </div>
                     
-                    {/* 分頁控制項 */}
+                    {}
                     {totalPages > 1 && (
                         <div className="flex justify-center items-center gap-4 mt-3 p-2 bg-gray-50 border border-gray-200 rounded">
                             <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 bg-white border border-gray-300 rounded shadow-sm hover:bg-gray-100 disabled:opacity-40 text-sm font-bold text-gray-700 transition-colors"><i className="fas fa-chevron-left mr-1"></i> 上一頁</button>
@@ -344,6 +345,30 @@
                                 <ResultTable headers={haojiHeaders} data={injectUID(originalData.haoji)} enableCopy={false} exactWidth={true} />
                             </div>
                         )}
+                    </div>
+                </div>
+            );
+        };
+
+        const WebBrowser = ({ title, url, scale = 1 }) => {
+            const [refreshKey, setRefreshKey] = useState(0);
+            return (
+                <div className="browser-frame-container card-shadow">
+                    <div className="browser-toolbar z-20 relative">
+                        <div className="browser-title"><i className="fas fa-globe text-blue-500"></i> {title}</div>
+                        <div className="browser-actions">
+                            <button onClick={() => window.open(url, '_blank')} className="browser-btn" title="在新分頁開啟"><i className="fas fa-external-link-alt"></i></button>
+                            <button onClick={() => setRefreshKey(prev => prev + 1)} className="browser-btn" title="重新整理"><i className="fas fa-sync-alt"></i></button>
+                        </div>
+                    </div>
+                    {/* 加入 Iframe 防呆提示 */}
+                    <div className="browser-content-wrapper relative bg-gray-50 flex items-center justify-center">
+                        <div className="text-center text-gray-400 absolute px-4 z-0 text-sm font-medium">
+                            <i className="fas fa-shield-alt text-2xl mb-2 opacity-50"></i><br/>
+                            若目標網站阻擋嵌入而呈現空白<br/>
+                            請點擊右上角 <i className="fas fa-external-link-alt mx-1"></i> 按鈕於新分頁開啟
+                        </div>
+                        <iframe key={refreshKey} src={url} className="browser-iframe relative z-10" style={{width:`${100/scale}%`, height:`${100/scale}%`, transform:`scale(${scale}) translate(-50%, 0)`, left: '50%', transformOrigin: 'top left'}} title={title} />
                     </div>
                 </div>
             );
@@ -613,30 +638,6 @@
             </div>
         );
 
-        const WebBrowser = ({ title, url, scale = 1 }) => {
-            const [refreshKey, setRefreshKey] = useState(0);
-            return (
-                <div className="browser-frame-container card-shadow">
-                    <div className="browser-toolbar z-20 relative">
-                        <div className="browser-title"><i className="fas fa-globe text-blue-500"></i> {title}</div>
-                        <div className="browser-actions">
-                            <button onClick={() => window.open(url, '_blank')} className="browser-btn" title="在新分頁開啟"><i className="fas fa-external-link-alt"></i></button>
-                            <button onClick={() => setRefreshKey(prev => prev + 1)} className="browser-btn" title="重新整理"><i className="fas fa-sync-alt"></i></button>
-                        </div>
-                    </div>
-                    {/* 加入 Iframe 防呆提示 */}
-                    <div className="browser-content-wrapper relative bg-gray-50 flex items-center justify-center">
-                        <div className="text-center text-gray-400 absolute px-4 z-0 text-sm font-medium">
-                            <i className="fas fa-shield-alt text-2xl mb-2 opacity-50"></i><br/>
-                            若目標網站阻擋嵌入而呈現空白<br/>
-                            請點擊右上角 <i className="fas fa-external-link-alt mx-1"></i> 按鈕於新分頁開啟
-                        </div>
-                        <iframe key={refreshKey} src={url} className="browser-iframe relative z-10" style={{width:`${100/scale}%`, height:`${100/scale}%`, transform:`scale(${scale}) translate(-50%, 0)`, left: '50%', transformOrigin: 'top left'}} title={title} />
-                    </div>
-                </div>
-            );
-        };
-
         const App = () => {
             const API_URL = "https://script.google.com/macros/s/AKfycbzF7XVJK-rIoHBIQvEVF1c4AJJNR4x5f-wkqAaWwCLb9yMflTE3_c9MSEzwwglQQFTwYw/exec";
             const [sheetData, setSheetData] = useState(null);
@@ -646,72 +647,107 @@
             const [fullDB, setFullDB] = useState(null);
             const [isDbLoading, setIsDbLoading] = useState(false);
             
+            // 防止 React Strict Mode 開啟時執行兩次 API 請求的保護機制
+            const hasFetchedRef = useRef(false);
+
             const embeddedSites = [{ title: "TMCA", url: "https://www.tmca.tw/Home/Search", scale: 0.85 }, { title: "ACMA", url: "https://www.acma.org.tw/blank-7", scale: 0.65 }];
             
             useEffect(() => {
-                fetch(`${API_URL}?op=info`)
-                .then(res => res.text())
-                .then(text => {
+                if (hasFetchedRef.current) return;
+                hasFetchedRef.current = true;
+
+                const initializeApp = async () => {
+                    // 1. 先抓取首頁即時資訊 (Info)
                     try {
-                        const data = JSON.parse(text);
-                        if(data.error) setApiError(data.error);
-                        else setSheetData(data);
-                    } catch (e) {
-                        setApiError("後端異常或無權限");
+                        const res = await fetch(`${API_URL}?op=info`);
+                        const text = await res.text(); // 避免直接 .json() 崩潰
+                        try {
+                            const data = JSON.parse(text);
+                            if(data.error) setApiError(data.error);
+                            else setSheetData(data);
+                        } catch (parseError) {
+                            console.error("Info parse error:", parseError, text.substring(0,100));
+                            setApiError("後端回傳格式錯誤，請稍後再試");
+                        }
+                    } catch (err) {
+                        console.error("Info fetch error:", err);
+                        setApiError("連線失敗");
                     }
                     setIsLoadingInfo(false);
-                })
-                .catch(err => {
-                    setApiError("連線失敗");
-                    setIsLoadingInfo(false);
-                });
 
-                const loadDatabase = async () => {
+                    // 2. 接著抓取大型資料庫 (循序進行，降低 GAS 併發率導致的 429 錯誤)
                     setIsDbLoading(true);
+                    
+                    let localDB = null;
+                    try {
+                        localDB = await localforage.getItem('Zongyi_DB_Cache');
+                    } catch(e) {
+                        console.warn("讀取 IndexedDB 時發生錯誤", e);
+                    }
+
+                    // 檢查線上版本
+                    let serverVersion = null;
                     try {
                         const verRes = await fetch(`${API_URL}?op=checkVersion`);
-                        const verData = await verRes.json();
-                        // 強化容錯：確保取到安全的字串版本號
-                        const serverVersion = (verData && verData.version) ? String(verData.version) : null;
-
-                        let localDB = null;
+                        const verText = await verRes.text();
                         try {
-                            localDB = await localforage.getItem('Zongyi_DB_Cache');
+                            const verData = JSON.parse(verText);
+                            serverVersion = (verData && verData.version) ? String(verData.version) : null;
                         } catch(e) {
-                            console.warn("讀取 IndexedDB 時發生錯誤", e);
+                            console.warn("解析版本號失敗 (GAS 可能回傳 HTML 錯誤):", e);
                         }
-                        
-                        // 安全比對本地與遠端版本
-                        if (serverVersion && localDB && localDB.lastUpdate && String(localDB.lastUpdate) === serverVersion) {
-                            console.log("🚀 [Cache Hit] 從本地瀏覽器快取載入資料庫，無需消耗網路流量！");
-                            setFullDB(localDB);
-                            setIsDbLoading(false);
-                            return;
-                        }
+                    } catch(e) {
+                        console.warn("連線檢查版本號失敗:", e);
+                    }
 
-                        console.log("☁️ [Cache Miss] 快取過期或不存在，正在從伺服器下載最新資料庫...");
+                    // 判斷是否使用快取
+                    if (serverVersion && localDB && localDB.lastUpdate && String(localDB.lastUpdate) === serverVersion) {
+                        console.log("🚀 [Cache Hit] 從本地瀏覽器快取載入資料庫！");
+                        setFullDB(localDB);
+                        setIsDbLoading(false);
+                        return;
+                    }
+                    
+                    // Fallback 機制: 如果檢查版本出錯，但手上有舊快取，則直接先用舊快取，不要卡死系統
+                    if (!serverVersion && localDB) {
+                        console.log("⚠️ [Fallback] 伺服器異常，強制使用上次的本地快取維持運作！");
+                        setFullDB(localDB);
+                        setIsDbLoading(false);
+                        return;
+                    }
+
+                    // 快取過期或不存在，重新下載
+                    console.log("☁️ [Cache Miss] 正在從伺服器下載最新資料庫...");
+                    try {
                         const dbRes = await fetch(`${API_URL}?op=getDB`, { redirect: "follow" });
                         const dbText = await dbRes.text();
-                        const dbData = JSON.parse(dbText);
-
-                        if (dbData.error) {
-                            console.error("DB Error:", dbData.error);
-                        } else {
-                            setFullDB(dbData);
-                            try {
-                                await localforage.setItem('Zongyi_DB_Cache', dbData);
-                                console.log("✅ 成功下載並儲存至本地快取！");
-                            } catch(e) {
-                                console.warn("儲存至 IndexedDB 時發生錯誤，可能是儲存空間不足或隱私模式限制", e);
+                        try {
+                            const dbData = JSON.parse(dbText);
+                            if (dbData.error) {
+                                console.error("DB API Error:", dbData.error);
+                                if (localDB) setFullDB(localDB); // 失敗的話一樣退回舊快取
+                            } else {
+                                setFullDB(dbData);
+                                try {
+                                    await localforage.setItem('Zongyi_DB_Cache', dbData);
+                                    console.log("✅ 成功下載並儲存至本地快取！");
+                                } catch(e) {
+                                    console.warn("無法存入本地端:", e);
+                                }
                             }
+                        } catch (parseError) {
+                            console.error("解析資料庫發生錯誤(可能回傳 HTML):", parseError);
+                            if (localDB) setFullDB(localDB);
                         }
                     } catch (e) {
-                        console.error("載入資料庫發生錯誤:", e);
+                        console.error("載入資料庫發生網路錯誤:", e);
+                        if (localDB) setFullDB(localDB);
                     }
+                    
                     setIsDbLoading(false);
                 };
 
-                loadDatabase();
+                initializeApp();
             }, []);
 
             const formatDateSimple = (val) => { if(!val)return"-"; if(typeof val==='string'&&val.match(/^\d{1,2}\/\d{1,2}$/))return val; try{const d=new Date(val);if(!isNaN(d.getTime()))return`${d.getMonth()+1}/${d.getDate()}`;}catch(e){return val;}return val; };
@@ -829,6 +865,7 @@
                                 {!panels.webQuery.collapsed && (<div className="p-2 flex flex-col gap-2"><div className="flex justify-start"><a href={links.copyright.must} target="_blank" className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-3 py-1 rounded text-sm inline-flex items-center shadow transition-colors"><i className="fas fa-music mr-2"></i> 前往 MÜST 著作權協會查詢</a></div><div className="grid grid-cols-1 md:grid-cols-2 gap-2">{embeddedSites.map((site, index) => <WebBrowser key={index} title={site.title} url={site.url} scale={site.scale} />)}</div></div>)}
                             </div>
 
+                            {}
                             {panels.unified.visible && <div className="search-panel card-shadow border-orange-400 border-2"><div className="search-header p-3 flex justify-between items-center border-b border-orange-200 bg-orange-50"><div className="flex items-center gap-2"><i className="fas fa-search-plus text-orange-500 text-lg"></i><span className="font-bold text-orange-800">綜合歌名查詢 (版權 / 紀錄 / 豪記)</span></div><div className="flex items-center gap-3">{isDbLoading && <span className="text-xs text-orange-500 animate-pulse font-bold"><i className="fas fa-spinner fa-spin mr-1"></i>資料庫同步中...</span>}<a href={links.copyright.querySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟試算表</a><button onClick={()=>togglePanelCollapse('unified')} className="w-6 h-6 rounded-full hover:bg-orange-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.unified.collapsed ? 'down' : 'up'} text-orange-500`}></i></button></div></div>{!panels.unified.collapsed && <div className="p-4 bg-white"><UnifiedSearchBlock hook={unifiedSearch} label="輸入歌名自動搜索關聯資料" headers={copyrightHeaders} enableCopy={true} remakeColIndex={3} mpaColIndex={4} /></div>}</div>}
                             
                             {panels.haojiQuery.visible && <div className="search-panel card-shadow"><div className="search-header p-3 flex justify-between items-center border-b border-gray-200"><div className="flex items-center gap-2"><i className="fas fa-compact-disc text-blue-500"></i><span>豪記查詢</span></div><div className="flex items-center gap-3"><a href={links.others.haojiQuerySource} target="_blank" className="text-xs text-blue-500 hover:underline"><i className="fas fa-external-link-alt mr-1"></i>開啟原始試算表</a><button onClick={()=>togglePanelCollapse('haojiQuery')} className="w-6 h-6 rounded-full hover:bg-gray-200 flex items-center justify-center transition-colors focus:outline-none"><i className={`fas fa-chevron-${panels.haojiQuery.collapsed ? 'down' : 'up'} text-gray-500`}></i></button></div></div>{!panels.haojiQuery.collapsed && <SimpleSearchPanel hook={haojiQuery} placeholder="請輸入豪記歌名..." headers={haojiHeaders} enableCopy={true} defaultColumnSelection="none" exactWidth={true} />}</div>}
